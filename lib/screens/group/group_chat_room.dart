@@ -266,6 +266,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           .doc(fileName)
           .delete();
       status = 0;
+      throw error; // Re-throw to satisfy return type
     });
 
     if (status == 1) {

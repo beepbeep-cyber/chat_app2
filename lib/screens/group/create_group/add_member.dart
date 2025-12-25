@@ -7,9 +7,9 @@ import 'package:my_porject/widgets/page_transitions.dart';
 import 'package:my_porject/widgets/animated_avatar.dart';
 
 class AddMember extends StatefulWidget {
-  User user;
-  bool isDeviceConnected;
-  AddMember({Key? key, required this.user, required this.isDeviceConnected})
+  final User user;
+  final bool isDeviceConnected;
+  const AddMember({Key? key, required this.user, required this.isDeviceConnected})
       : super(key: key);
 
   @override

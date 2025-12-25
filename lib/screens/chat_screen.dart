@@ -437,6 +437,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc(fileName)
           .delete();
       status = 0;
+      throw error; // Re-throw to satisfy return type
     });
 
     if (status == 1) {
@@ -2871,8 +2872,8 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class ShowImage extends StatelessWidget {
-  bool isDeviceConnected;
-  ShowImage({Key? key, required this.imageUrl, required this.isDeviceConnected})
+  final bool isDeviceConnected;
+  const ShowImage({Key? key, required this.imageUrl, required this.isDeviceConnected})
       : super(key: key);
 
   final String imageUrl;

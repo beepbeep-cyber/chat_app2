@@ -182,7 +182,6 @@ Future<User?> signInWithGoogle() async {
       idToken: idToken,
     );
 
-    await _auth.signInWithCredential(credential);
     User? user = (await _auth.signInWithCredential(credential)).user;
     if (user != null) {
       await _firestore.collection('users').doc(_auth.currentUser?.uid).set({
@@ -217,7 +216,7 @@ Future<User?> signInWithFacebook() async {
   final LoginResult loginResult = await FacebookAuth.instance
       .login(permissions: ['email', 'public_profile']);
 
-  if (loginResult == LoginStatus.success) {
+  if (loginResult.status == LoginStatus.success) {
     final OAuthCredential oAuthCredential =
         FacebookAuthProvider.credential(loginResult.accessToken!.tokenString);
 

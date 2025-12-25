@@ -186,6 +186,7 @@ class _SettingState extends State<Setting> {
 
     var uploadTask = await ref.putFile(imageFile!).catchError((error) async {
       status = 0;
+      throw error; // Re-throw to satisfy return type
     });
 
     if (status == 1) {
