@@ -57,6 +57,9 @@ class EncryptionService {
     String message,
     String recipientPublicKey,
   ) {
+    // Handle empty message edge case
+    final messageToEncrypt = message.isEmpty ? ' ' : message;
+    
     // Generate random AES key (256-bit)
     final aesKey = encrypt_pkg.Key.fromSecureRandom(32);
     
@@ -67,7 +70,7 @@ class EncryptionService {
     final encrypter = encrypt_pkg.Encrypter(
       encrypt_pkg.AES(aesKey, mode: encrypt_pkg.AESMode.cbc),
     );
-    final encryptedMessage = encrypter.encrypt(message, iv: iv);
+    final encryptedMessage = encrypter.encrypt(messageToEncrypt, iv: iv);
     
     // Encrypt AES key with recipient's RSA public key
     final publicKey = _parsePublicKeyFromPem(recipientPublicKey);
@@ -118,7 +121,8 @@ class EncryptionService {
       );
       final decryptedMessage = encrypter.decrypt(encryptedMessage, iv: iv);
       
-      return decryptedMessage;
+      // Handle empty message edge case (we encrypted ' ' for empty messages)
+      return decryptedMessage.trim().isEmpty ? '' : decryptedMessage;
     } catch (e) {
       return '[Decryption Error: Unable to decrypt message]';
     }

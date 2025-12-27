@@ -59,6 +59,10 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
   String? avatarUrl;
   bool isLoading = false;
 
+  // E2EE Decryption caching to prevent repeated decryption on widget rebuilds
+  final Map<String, String> _decryptedMessagesCache = {};
+  final Map<String, Future<String>> _decryptionFuturesCache = {};
+
   @override
   void initState() {
     getConnectivity();
@@ -186,8 +190,8 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     }
   }
 
-  // Decrypt message if it's encrypted
-  Future<String> _decryptMessageIfNeeded(Map<String, dynamic> chatMap) async {
+  // Decrypt message if it's encrypted (with caching)
+  Future<String> _decryptMessageIfNeeded(Map<String, dynamic> chatMap, String messageId) async {
     try {
       final String message = chatMap['message'] ?? '';
       final bool isEncrypted = chatMap['isEncrypted'] ?? false;
@@ -197,17 +201,45 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         return message;
       }
       
+      // Check cache first (instant return)
+      if (_decryptedMessagesCache.containsKey(messageId)) {
+        return _decryptedMessagesCache[messageId]!;
+      }
+      
       // Decrypt the message
       String? decryptedMessage = await GroupEncryptionService.decryptGroupMessage(
         message,
         widget.groupChatId,
       );
       
-      return decryptedMessage ?? '[Unable to decrypt message]';
+      final result = decryptedMessage ?? '[Unable to decrypt message]';
+      
+      // Cache the result
+      _decryptedMessagesCache[messageId] = result;
+      
+      return result;
     } catch (e) {
       if (kDebugMode) { debugPrint('Error decrypting message: $e'); }
       return '[Decryption error]';
     }
+  }
+
+  // Get cached Future for FutureBuilder to prevent flickering
+  Future<String> _getCachedMessageFuture(Map<String, dynamic> chatMap, String messageId) {
+    // If already have result, return completed future immediately
+    if (_decryptedMessagesCache.containsKey(messageId)) {
+      return Future.value(_decryptedMessagesCache[messageId]!);
+    }
+    
+    // If Future already in progress, return same Future (prevents duplicate decryption)
+    if (_decryptionFuturesCache.containsKey(messageId)) {
+      return _decryptionFuturesCache[messageId]!;
+    }
+    
+    // Create new Future and cache it
+    final future = _decryptMessageIfNeeded(chatMap, messageId);
+    _decryptionFuturesCache[messageId] = future;
+    return future;
   }
 
   void getMemberList() async {
@@ -724,8 +756,9 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                               // Map<String, dynamic> map = snapshot.data?.docs[index].data() as Map<String, dynamic>;
                               Map<String, dynamic> map =
                                   element.data() as Map<String, dynamic>;
+                              final String messageId = element.id; // Get document ID for caching
                               return messageTitle(
-                                  size, map, index, snapshot.data!.docs.length);
+                                  size, map, index, snapshot.data!.docs.length, messageId);
                             },
                             // controller: itemScrollController,
                           );
@@ -891,7 +924,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
   }
 
   Widget messageTitle(
-      Size size, Map<String, dynamic> chatMap, int index, int length) {
+      Size size, Map<String, dynamic> chatMap, int index, int length, String messageId) {
     return Builder(builder: (context) {
       if (chatMap['status'] == 'removed') {
         return Row(
@@ -1002,12 +1035,15 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                           color: AppTheme.accent,
                         ),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Decrypt message if encrypted
+                            // Decrypt message if encrypted (with caching)
                             FutureBuilder<String>(
-                              future: _decryptMessageIfNeeded(chatMap),
+                              future: _getCachedMessageFuture(chatMap, messageId),
                               builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                // Show loading only if no cached data available
+                                if (snapshot.connectionState == ConnectionState.waiting &&
+                                    !_decryptedMessagesCache.containsKey(messageId)) {
                                   return Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1031,13 +1067,31 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                     ],
                                   );
                                 }
-                                return Text(
-                                  snapshot.data ?? chatMap['message'],
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
+                                // Use cached data if available, otherwise use snapshot data
+                                final messageText = _decryptedMessagesCache[messageId] ??
+                                    snapshot.data ??
+                                    chatMap['message'] ?? '';
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (chatMap['isEncrypted'] == true)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 6),
+                                        child: Icon(Icons.lock_outline,
+                                            color: Colors.green[300],
+                                            size: 14),
+                                      ),
+                                    Flexible(
+                                      child: Text(
+                                        messageText,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 );
                               },
                             ),
