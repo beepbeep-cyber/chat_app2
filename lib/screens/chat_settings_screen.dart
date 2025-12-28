@@ -61,11 +61,22 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
 
   Future<void> _saveSettings() async {
     try {
+      // Get both user IDs from chatRoomId (format: uid1_uid2)
+      final parts = widget.chatRoomId.split('_');
+      List<String> userIds = [];
+      if (parts.length >= 2) {
+        userIds = [parts[0], parts[1]];
+      } else {
+        // Fallback: use current user and the other user
+        userIds = [_auth.currentUser!.uid, widget.userMap['uid']];
+      }
+      
       await _firestore.collection('chatroom').doc(widget.chatRoomId).set({
         'autoDeleteEnabled': _autoDeleteEnabled,
         'autoDeleteDuration': _selectedDuration,
         'autoDeleteUpdatedBy': _auth.currentUser!.uid,
         'autoDeleteUpdatedAt': DateTime.now(),
+        'users': userIds, // IMPORTANT: Store users list for auto-delete to update chat history
       }, SetOptions(merge: true));
 
       if (mounted) {

@@ -236,28 +236,60 @@ class AutoDeleteService {
       if (!chatroomDoc.exists) return;
       
       final chatroomData = chatroomDoc.data()!;
-      final users = chatroomData['users'] as List<dynamic>? ?? [];
+      List<String> users = [];
+      
+      // Try to get users from 'users' field first
+      if (chatroomData['users'] != null) {
+        users = (chatroomData['users'] as List<dynamic>).map((e) => e.toString()).toList();
+      } else {
+        // Fallback: Try to extract users from chatRoomId (format: uid1_uid2)
+        final parts = chatRoomId.split('_');
+        if (parts.length >= 2) {
+          users = [parts[0], parts[1]];
+          
+          // Save users to chatroom for future reference
+          await _firestore.collection('chatroom').doc(chatRoomId).update({
+            'users': users,
+          });
+          
+          if (kDebugMode) {
+            debugPrint('🗑️ [AutoDelete] Extracted users from chatRoomId: $users');
+          }
+        }
+      }
+      
+      if (users.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('⚠️ [AutoDelete] No users found for chatroom: $chatRoomId');
+        }
+        return;
+      }
       
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('🗑️ [AutoDelete] Updating chat history for ${users.length} users'); }
+        debugPrint('🗑️ [AutoDelete] Updating chat history for ${users.length} users: $users');
       }
       
       // Update chat history for each user
       for (final userId in users) {
         try {
+          // First, find the other user's ID to use as the document ID in chatHistory
+          final otherUserId = users.firstWhere((u) => u != userId, orElse: () => '');
+          
+          if (otherUserId.isEmpty) continue;
+          
           final historyDoc = await _firestore
               .collection('users')
-              .doc(userId.toString())
+              .doc(userId)
               .collection('chatHistory')
-              .doc(chatRoomId)
+              .doc(otherUserId)
               .get();
           
           if (historyDoc.exists) {
             await _firestore
                 .collection('users')
-                .doc(userId.toString())
+                .doc(userId)
                 .collection('chatHistory')
-                .doc(chatRoomId)
+                .doc(otherUserId)
                 .update({
               'lastMessage': lastMessage.isEmpty ? 'No messages' : lastMessage,
               'type': type,
@@ -265,18 +297,18 @@ class AutoDeleteService {
             });
             
             if (kDebugMode) {
-              if (kDebugMode) { debugPrint('🗑️ [AutoDelete] Updated chat history for user: $userId'); }
+              debugPrint('🗑️ [AutoDelete] Updated chat history for user: $userId -> $otherUserId');
             }
           }
         } catch (e) {
           if (kDebugMode) {
-            if (kDebugMode) { debugPrint('⚠️ [AutoDelete] Failed to update history for user $userId: $e'); }
+            debugPrint('⚠️ [AutoDelete] Failed to update history for user $userId: $e');
           }
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('❌ [AutoDelete] Error updating chat history: $e'); }
+        debugPrint('❌ [AutoDelete] Error updating chat history: $e');
       }
     }
   }

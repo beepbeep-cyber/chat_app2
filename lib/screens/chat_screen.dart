@@ -953,11 +953,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     Expanded(
                       child: StreamBuilder<QuerySnapshot>(
                         // Optimized: Limit messages to improve performance
+                        // FIX: Changed to descending: false to show oldest messages first (chronological order)
                         stream: _firestore
                             .collection('chatroom')
                             .doc(widget.chatRoomId)
                             .collection('chats')
-                            .orderBy('timeStamp', descending: true)
+                            .orderBy('timeStamp', descending: false)
                             .limit(_messageLimit)
                             .snapshots(),
                         builder: (BuildContext context,
