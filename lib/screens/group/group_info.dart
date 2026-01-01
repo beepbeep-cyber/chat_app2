@@ -854,6 +854,64 @@ class _GroupInfoState extends State<GroupInfo> {
                     ),
                   ),
 
+                  // Delete All Messages Section (separate button for easy access)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      onTap: () {
+                        if (widget.isDeviceConnected == false) {
+                          showDialogInternetCheck();
+                        } else if (checkAdmin()) {
+                          _showDeleteAllMessagesConfirmation();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Only admins can delete all messages'),
+                              backgroundColor: AppTheme.warning,
+                            ),
+                          );
+                        }
+                      },
+                      leading: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppTheme.error.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.delete_forever_outlined, color: AppTheme.error, size: 22),
+                      ),
+                      title: Text(
+                        'Delete All Messages',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.error,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Permanently delete all chat messages',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.gray600,
+                        ),
+                      ),
+                      trailing: Icon(Icons.chevron_right, color: AppTheme.gray400),
+                    ),
+                  ),
+
                   // Members List Section
                   Container(
                     margin: const EdgeInsets.all(16),
