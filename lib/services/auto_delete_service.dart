@@ -314,10 +314,29 @@ class AutoDeleteService {
   }
 
   /// Xóa tất cả tin nhắn trong chatroom (manual delete all)
+  /// IMPORTANT: This preserves auto-delete settings while only clearing messages
   Future<bool> deleteAllMessages(String chatRoomId) async {
     try {
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('🗑️ [AutoDelete] Deleting ALL messages in chatroom: $chatRoomId'); }
+        debugPrint('🗑️ [AutoDelete] Deleting ALL messages in chatroom: $chatRoomId');
+      }
+
+      // First, save current auto-delete settings BEFORE any changes
+      final chatroomDoc = await _firestore.collection('chatroom').doc(chatRoomId).get();
+      Map<String, dynamic>? savedSettings;
+      
+      if (chatroomDoc.exists) {
+        final data = chatroomDoc.data()!;
+        savedSettings = {
+          'autoDeleteEnabled': data['autoDeleteEnabled'],
+          'autoDeleteDuration': data['autoDeleteDuration'],
+          'autoDeleteUpdatedBy': data['autoDeleteUpdatedBy'],
+          'autoDeleteUpdatedAt': data['autoDeleteUpdatedAt'],
+          'users': data['users'],
+        };
+        if (kDebugMode) {
+          debugPrint('🗑️ [AutoDelete] Saved settings before delete: $savedSettings');
+        }
       }
 
       final allMessages = await _firestore
@@ -328,13 +347,13 @@ class AutoDeleteService {
 
       if (allMessages.docs.isEmpty) {
         if (kDebugMode) {
-          if (kDebugMode) { debugPrint('🗑️ [AutoDelete] No messages to delete'); }
+          debugPrint('🗑️ [AutoDelete] No messages to delete');
         }
         return true;
       }
 
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('🗑️ [AutoDelete] Found ${allMessages.docs.length} messages to delete'); }
+        debugPrint('🗑️ [AutoDelete] Found ${allMessages.docs.length} messages to delete');
       }
 
       // Batch delete
@@ -348,7 +367,7 @@ class AutoDeleteService {
         if (deleteCount >= 450) {
           await batch.commit();
           if (kDebugMode) {
-            if (kDebugMode) { debugPrint('🗑️ [AutoDelete] Committed batch of $deleteCount deletes'); }
+            debugPrint('🗑️ [AutoDelete] Committed batch of $deleteCount deletes');
           }
           batch = _firestore.batch();
           deleteCount = 0;
@@ -359,23 +378,48 @@ class AutoDeleteService {
         await batch.commit();
       }
 
-      // Reset last message in chatroom
-      await _firestore.collection('chatroom').doc(chatRoomId).update({
+      // Reset last message in chatroom BUT PRESERVE auto-delete settings
+      final updateData = <String, dynamic>{
         'lastMessage': '',
         'type': 'text',
-      });
+      };
+      
+      // Restore auto-delete settings to ensure they are NOT lost
+      if (savedSettings != null) {
+        if (savedSettings['autoDeleteEnabled'] != null) {
+          updateData['autoDeleteEnabled'] = savedSettings['autoDeleteEnabled'];
+        }
+        if (savedSettings['autoDeleteDuration'] != null) {
+          updateData['autoDeleteDuration'] = savedSettings['autoDeleteDuration'];
+        }
+        if (savedSettings['autoDeleteUpdatedBy'] != null) {
+          updateData['autoDeleteUpdatedBy'] = savedSettings['autoDeleteUpdatedBy'];
+        }
+        if (savedSettings['autoDeleteUpdatedAt'] != null) {
+          updateData['autoDeleteUpdatedAt'] = savedSettings['autoDeleteUpdatedAt'];
+        }
+        if (savedSettings['users'] != null) {
+          updateData['users'] = savedSettings['users'];
+        }
+      }
+      
+      await _firestore.collection('chatroom').doc(chatRoomId).update(updateData);
+      
+      if (kDebugMode) {
+        debugPrint('🗑️ [AutoDelete] Updated chatroom with preserved settings: $updateData');
+      }
       
       // Also update chat history for all users
       await _updateChatHistoryForAllUsers(chatRoomId, '', 'text', '');
 
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('✅ [AutoDelete] Successfully deleted all ${allMessages.docs.length} messages'); }
+        debugPrint('✅ [AutoDelete] Successfully deleted all ${allMessages.docs.length} messages (settings preserved)');
       }
 
       return true;
     } catch (e) {
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('❌ [AutoDelete] Error deleting all messages: $e'); }
+        debugPrint('❌ [AutoDelete] Error deleting all messages: $e');
       }
       return false;
     }

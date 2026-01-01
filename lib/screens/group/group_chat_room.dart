@@ -855,14 +855,14 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                     maxLines: null,
                                     style: TextStyle(
                                       fontSize: 16, 
-                                      color: AppTheme.primaryDark, 
+                                      color: Colors.grey[900], // Fixed: Use solid color instead of transparent
                                       height: 1.5,
                                       fontWeight: FontWeight.w400,
                                     ),
                                     decoration: InputDecoration(
                                       hintText: 'Type a message...',
                                       hintStyle: TextStyle(
-                                        color: AppTheme.gray500, 
+                                        color: Colors.grey[500], // Fixed: Use solid color
                                         fontSize: 16,
                                         fontWeight: FontWeight.w400,
                                       ),

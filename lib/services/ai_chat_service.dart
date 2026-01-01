@@ -118,14 +118,34 @@ class AIChatService {
     debugPrint('🗑️ AIChatService: Conversation history cleared');
   }
   
-  /// Send message to AI and get response
-  static Future<AIChatResponse> sendMessage(String message) async {
+  // Rate limit handling
+  static int _rateLimitRetryCount = 0;
+  static const int _maxRetries = 3;
+  static DateTime? _lastRateLimitTime;
+  static const int _rateLimitDelaySeconds = 5; // Initial delay
+  
+  /// Send message to AI and get response with retry logic for rate limits
+  static Future<AIChatResponse> sendMessage(String message, {int retryCount = 0}) async {
     if (!isInitialized) {
       return AIChatResponse(
         success: false,
         message: 'AI Service not initialized. Please set your API key in Settings.',
         error: 'NO_API_KEY',
       );
+    }
+    
+    // Check if we need to wait due to previous rate limit
+    if (_lastRateLimitTime != null) {
+      final waitTime = _rateLimitDelaySeconds * (retryCount + 1);
+      final elapsed = DateTime.now().difference(_lastRateLimitTime!).inSeconds;
+      if (elapsed < waitTime) {
+        final remaining = waitTime - elapsed;
+        return AIChatResponse(
+          success: false,
+          message: 'Please wait $remaining seconds before trying again (rate limit).',
+          error: 'RATE_LIMIT_WAIT',
+        );
+      }
     }
     
     try {
@@ -185,6 +205,10 @@ class AIChatService {
       );
       
       if (response.statusCode == 200) {
+        // Reset rate limit tracking on success
+        _rateLimitRetryCount = 0;
+        _lastRateLimitTime = null;
+        
         final data = jsonDecode(response.body);
         
         // Extract response text
@@ -235,6 +259,11 @@ class AIChatService {
           
           // Check for specific errors
           if (errorMessage.contains('API key')) {
+            // Remove last user message since request failed
+            if (_conversationHistory.isNotEmpty && 
+                _conversationHistory.last['role'] == 'user') {
+              _conversationHistory.removeLast();
+            }
             return AIChatResponse(
               success: false,
               message: 'Invalid API key. Please check your API key in Settings.',
@@ -242,10 +271,31 @@ class AIChatService {
             );
           }
           
+          // Handle rate limit with exponential backoff retry
           if (response.statusCode == 429) {
+            _lastRateLimitTime = DateTime.now();
+            _rateLimitRetryCount++;
+            
+            // Remove last user message for retry
+            if (_conversationHistory.isNotEmpty && 
+                _conversationHistory.last['role'] == 'user') {
+              _conversationHistory.removeLast();
+            }
+            
+            if (retryCount < _maxRetries) {
+              final waitSeconds = _rateLimitDelaySeconds * (retryCount + 1);
+              debugPrint('⏳ AIChatService: Rate limited. Retrying in $waitSeconds seconds (attempt ${retryCount + 1}/$_maxRetries)');
+              
+              // Wait with exponential backoff
+              await Future.delayed(Duration(seconds: waitSeconds));
+              
+              // Retry the request
+              return sendMessage(message, retryCount: retryCount + 1);
+            }
+            
             return AIChatResponse(
               success: false,
-              message: 'Rate limit exceeded. Please wait a moment and try again.',
+              message: 'Rate limit exceeded. Please wait a moment and try again.\n\nTip: If this keeps happening, consider getting your own API key from Google AI Studio.',
               error: 'RATE_LIMIT',
             );
           }

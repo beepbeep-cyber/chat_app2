@@ -280,9 +280,38 @@ class _GroupInfoState extends State<GroupInfo> {
             const SizedBox(height: 20),
             // Auto-delete options
             _buildAutoDeleteOption('Off', 'Messages will not be deleted', Icons.block, null),
+            _buildAutoDeleteOption('1 Minute', 'Delete after 1 minute', Icons.timer, 1),
+            _buildAutoDeleteOption('5 Minutes', 'Delete after 5 minutes', Icons.timer_3, 5),
             _buildAutoDeleteOption('1 Hour', 'Delete after 1 hour', Icons.schedule, 60),
             _buildAutoDeleteOption('1 Day', 'Delete after 24 hours', Icons.calendar_today, 1440),
             _buildAutoDeleteOption('1 Week', 'Delete after 7 days', Icons.calendar_month, 10080),
+            const SizedBox(height: 16),
+            // Delete All Messages Button
+            Container(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showDeleteAllMessagesConfirmation();
+                },
+                icon: const Icon(Icons.delete_forever, color: Colors.white),
+                label: const Text(
+                  'Delete All Messages',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.error,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 10),
           ],
         ),
@@ -336,11 +365,15 @@ class _GroupInfoState extends State<GroupInfo> {
 
   Future<void> _saveAutoDeleteSetting(int? minutes) async {
     try {
+      // Get member UIDs for auto-delete service
+      List<String> memberUids = membersList.map((m) => m['uid'].toString()).toList();
+      
       await _firestore.collection('groups').doc(widget.groupId).set({
         'autoDeleteEnabled': minutes != null,
         'autoDeleteDuration': minutes ?? 0,
         'autoDeleteUpdatedBy': _auth.currentUser!.uid,
         'autoDeleteUpdatedAt': DateTime.now(),
+        'memberUids': memberUids, // Store member UIDs for auto-delete to update chat history
       }, SetOptions(merge: true));
 
       if (mounted) {
@@ -359,6 +392,182 @@ class _GroupInfoState extends State<GroupInfo> {
           SnackBar(
             content: Text('Error: $e'),
             backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Show confirmation dialog for deleting all messages
+  void _showDeleteAllMessagesConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppTheme.error, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Delete All Messages?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This will permanently delete ALL messages in this group chat for everyone.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.gray700,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppTheme.error, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone!',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.gray600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteAllGroupMessages();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Delete all messages in group chat
+  Future<void> _deleteAllGroupMessages() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Deleting all messages...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Get all messages in group chat
+      final messagesSnapshot = await _firestore
+          .collection('groups')
+          .doc(widget.groupId)
+          .collection('chats')
+          .get();
+
+      // Delete in batches
+      final batch = _firestore.batch();
+      int count = 0;
+      for (var doc in messagesSnapshot.docs) {
+        batch.delete(doc.reference);
+        count++;
+        // Commit batch every 450 documents
+        if (count % 450 == 0) {
+          await batch.commit();
+        }
+      }
+      await batch.commit();
+
+      // Update chat history for all members
+      for (var member in membersList) {
+        await _firestore
+            .collection('users')
+            .doc(member['uid'])
+            .collection('chatHistory')
+            .doc(widget.groupId)
+            .update({
+          'lastMessage': 'All messages have been deleted',
+          'time': timeForMessage(DateTime.now().toString()),
+          'timeStamp': DateTime.now(),
+        });
+      }
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('All messages deleted successfully!'),
+              ],
+            ),
+            backgroundColor: AppTheme.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting messages: $e'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }

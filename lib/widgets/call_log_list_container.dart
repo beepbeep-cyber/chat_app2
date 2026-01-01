@@ -14,6 +14,19 @@ class CallLogListContainer extends StatefulWidget {
 }
 
 class _CallLogListContainerState extends State<CallLogListContainer> {
+  // Helper to safely get avatar image
+  ImageProvider? _getAvatarImage(bool hasDialled, Log log) {
+    try {
+      final String? avatarUrl = hasDialled ? log.receiverPic : log.callerPic;
+      if (avatarUrl != null && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
+        return CachedNetworkImageProvider(avatarUrl);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   getIcon(String? callStatus) {
     Icon _icon;
     double _iconSize = 18;
@@ -127,10 +140,12 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                                 ),
                               ),
                               child: CircleAvatar(
-                                backgroundImage: hasDialled
-                                    ? CachedNetworkImageProvider(_log.receiverPic!)
-                                    : CachedNetworkImageProvider(_log.callerPic!),
                                 radius: 24,
+                                backgroundColor: AppTheme.gray200,
+                                backgroundImage: _getAvatarImage(hasDialled, _log),
+                                child: _getAvatarImage(hasDialled, _log) == null
+                                    ? Icon(Icons.person, color: AppTheme.gray500, size: 24)
+                                    : null,
                               ),
                             ),
                             title: Text(

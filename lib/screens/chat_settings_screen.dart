@@ -532,6 +532,10 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
 
   /// Xóa tất cả tin nhắn
   Future<void> _deleteAllMessages() async {
+    // Save current settings before delete
+    final savedEnabled = _autoDeleteEnabled;
+    final savedDuration = _selectedDuration;
+    
     // Show loading
     showDialog(
       context: context,
@@ -554,6 +558,21 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
       // Close loading dialog
       if (mounted) Navigator.pop(context);
 
+      if (success && mounted) {
+        // Reload settings from Firestore to ensure UI is in sync
+        await _loadSettings();
+        
+        // If settings got lost somehow, restore them
+        if (_autoDeleteEnabled != savedEnabled || _selectedDuration != savedDuration) {
+          setState(() {
+            _autoDeleteEnabled = savedEnabled;
+            _selectedDuration = savedDuration;
+          });
+          // Re-save to ensure persistence
+          await _saveSettings();
+        }
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -564,10 +583,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                   color: Colors.white,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  success 
-                    ? 'All messages deleted successfully!' 
-                    : 'Failed to delete messages. Please try again.',
+                Expanded(
+                  child: Text(
+                    success 
+                      ? 'All messages deleted! Auto-delete settings preserved.' 
+                      : 'Failed to delete messages. Please try again.',
+                  ),
                 ),
               ],
             ),
