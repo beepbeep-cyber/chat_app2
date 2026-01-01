@@ -927,218 +927,220 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       Size size, Map<String, dynamic> chatMap, int index, int length, String messageId) {
     return Builder(builder: (context) {
       if (chatMap['status'] == 'removed') {
+        // Removed message - matching 1-1 chat theme
+        final bool isMe = chatMap['sendBy'] == widget.user.displayName;
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            const SizedBox(
-              width: 2,
-            ),
-            chatMap['sendBy'] != widget.user.displayName
-                ? SizedBox(
-                    height: size.width / 13,
-                    width: size.width / 13,
-                    child: CircleAvatar(
-                      backgroundImage: NetworkImage(chatMap['avatar']),
-                      maxRadius: 30,
-                    ),
-                  )
-                : Container(),
-            GestureDetector(
-              onLongPress: () {},
-              child: Container(
-                width: chatMap['sendBy'] == widget.user.displayName
-                    ? size.width * 0.98
-                    : size.width * 0.7,
-                alignment: chatMap['sendBy'] == widget.user.displayName
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Container(
-                  constraints: BoxConstraints(maxWidth: size.width / 1.5),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Colors.grey.shade200,
-                  ),
-                  child: Text(
-                    chatMap['message'],
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 17,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
+            const SizedBox(width: 2),
+            if (!isMe)
+              SizedBox(
+                height: size.width / 13,
+                width: size.width / 13,
+                child: CircleAvatar(
+                  backgroundImage: chatMap['avatar'] != null 
+                      ? NetworkImage(chatMap['avatar']) 
+                      : null,
+                  backgroundColor: Colors.grey.shade300,
+                  maxRadius: 30,
+                  child: chatMap['avatar'] == null 
+                      ? Icon(Icons.person, color: Colors.grey.shade600, size: 18)
+                      : null,
                 ),
+              ),
+            Container(
+              constraints: BoxConstraints(maxWidth: size.width * 0.7),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Colors.grey.shade200,
+                border: Border.all(color: Colors.grey.shade300, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.block, color: Colors.grey.shade500, size: 16),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      chatMap['message'] ?? 'Message deleted',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 15,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         );
       } else {
         if (chatMap['type'] == 'text') {
+          final bool isMe = chatMap['sendBy'] == widget.user.displayName;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const SizedBox(
-                width: 2,
-              ),
-              chatMap['sendBy'] != widget.user.displayName
+              const SizedBox(width: 2),
+              // Avatar for other users (not me)
+              !isMe
                   ? Container(
                       margin: const EdgeInsets.only(bottom: 5),
                       height: size.width / 13,
                       width: size.width / 13,
                       child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
+                        backgroundImage: chatMap['avatar'] != null 
+                            ? NetworkImage(chatMap['avatar']) 
+                            : null,
+                        backgroundColor: Colors.grey.shade300,
                         maxRadius: 30,
+                        child: chatMap['avatar'] == null 
+                            ? Icon(Icons.person, color: Colors.grey.shade600, size: 18)
+                            : null,
                       ),
                     )
                   : Container(),
-              Column(
-                children: [
-                  chatMap['sendBy'] != widget.user.displayName
-                      ? Container(
-                          padding: const EdgeInsets.only(left: 8),
-                          width: size.width * 0.7,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            chatMap['sendBy'],
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade800,
-                            ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  children: [
+                    // Sender name for group chat (only for others)
+                    if (!isMe)
+                      Container(
+                        padding: const EdgeInsets.only(left: 12, bottom: 2),
+                        child: Text(
+                          chatMap['sendBy'] ?? '',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
                           ),
-                        )
-                      : Container(),
-                  GestureDetector(
-                    onLongPress: () {
-                      if (chatMap['sendBy'] == widget.user.displayName) {
-                        changeMessage(
-                            index, length, chatMap['message'], chatMap['type']);
-                      }
-                    },
-                    child: Container(
-                      width: chatMap['sendBy'] == widget.user.displayName
-                          ? size.width * 0.98
-                          : size.width * 0.7,
-                      alignment: chatMap['sendBy'] == widget.user.displayName
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        constraints: BoxConstraints(maxWidth: size.width / 1.5),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 12),
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 5, horizontal: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          color: AppTheme.accent,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Decrypt message if encrypted (with caching)
-                            FutureBuilder<String>(
-                              future: _getCachedMessageFuture(chatMap, messageId),
-                              builder: (context, snapshot) {
-                                // Show loading only if no cached data available
-                                if (snapshot.connectionState == ConnectionState.waiting &&
-                                    !_decryptedMessagesCache.containsKey(messageId)) {
-                                  return Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 12,
-                                        height: 12,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Decrypting...',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white70,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }
-                                // Use cached data if available, otherwise use snapshot data
-                                final messageText = _decryptedMessagesCache[messageId] ??
-                                    snapshot.data ??
-                                    chatMap['message'] ?? '';
-                                return Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (chatMap['isEncrypted'] == true)
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 6),
-                                        child: Icon(Icons.lock_outline,
-                                            color: Colors.green[300],
-                                            size: 14),
-                                      ),
-                                    Flexible(
-                                      child: Text(
-                                        messageText,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
+                      ),
+                    GestureDetector(
+                      onLongPress: () {
+                        if (isMe) {
+                          changeMessage(index, length, chatMap['message'], chatMap['type']);
+                        }
+                      },
+                      child: Container(
+                        constraints: BoxConstraints(maxWidth: size.width * 0.7),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        decoration: BoxDecoration(
+                          // Match 1-1 chat theme: different border radius for sent/received
+                          borderRadius: isMe
+                              ? const BorderRadius.only(
+                                  topLeft: Radius.circular(18),
+                                  topRight: Radius.circular(18),
+                                  bottomLeft: Radius.circular(18),
+                                  bottomRight: Radius.circular(4),
+                                )
+                              : const BorderRadius.only(
+                                  topLeft: Radius.circular(18),
+                                  topRight: Radius.circular(18),
+                                  bottomLeft: Radius.circular(4),
+                                  bottomRight: Radius.circular(18),
+                                ),
+                          // Match 1-1 chat theme colors
+                          color: isMe ? AppTheme.sentBubble : AppTheme.receivedBubble,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withValues(alpha: 0.15),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: const Offset(0, 1),
                             ),
                           ],
                         ),
+                        child: FutureBuilder<String>(
+                          future: _getCachedMessageFuture(chatMap, messageId),
+                          builder: (context, snapshot) {
+                            // Show loading only if no cached data available
+                            if (snapshot.connectionState == ConnectionState.waiting &&
+                                !_decryptedMessagesCache.containsKey(messageId)) {
+                              return Text(
+                                'Decrypting...',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: isMe ? Colors.white70 : Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              );
+                            }
+                            // Use cached data if available, otherwise use snapshot data
+                            final messageText = _decryptedMessagesCache[messageId] ??
+                                snapshot.data ??
+                                chatMap['message'] ?? '';
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (chatMap['isEncrypted'] == true)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Icon(
+                                      Icons.lock_outline,
+                                      color: isMe ? Colors.green[300] : Colors.green[600],
+                                      size: 14,
+                                    ),
+                                  ),
+                                Flexible(
+                                  child: Text(
+                                    messageText,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: isMe ? Colors.white : Colors.grey[900],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           );
         } else if (chatMap['type'] == 'img') {
+          final bool isMe = chatMap['sendBy'] == widget.user.displayName;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const SizedBox(
-                width: 2,
-              ),
-              chatMap['sendBy'] != widget.user.displayName
+              const SizedBox(width: 2),
+              !isMe
                   ? Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       height: size.width / 13,
                       width: size.width / 13,
                       child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
+                        backgroundImage: chatMap['avatar'] != null 
+                            ? NetworkImage(chatMap['avatar']) 
+                            : null,
+                        backgroundColor: Colors.grey.shade300,
                         maxRadius: 30,
+                        child: chatMap['avatar'] == null 
+                            ? Icon(Icons.person, color: Colors.grey.shade600, size: 18)
+                            : null,
                       ),
                     )
                   : Container(),
               GestureDetector(
                 onLongPress: () {
-                  if (chatMap['sendBy'] == widget.user.displayName) {
-                    changeMessage(
-                        index, length, chatMap['message'], chatMap['type']);
+                  if (isMe) {
+                    changeMessage(index, length, chatMap['message'], chatMap['type']);
                   }
                 },
                 child: Container(
                   height: size.height / 2.5,
-                  width: chatMap['sendBy'] == widget.user.displayName
-                      ? size.width * 0.98
-                      : size.width * 0.77,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                  alignment: chatMap['sendBy'] == widget.user.displayName
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
+                  width: isMe ? size.width * 0.98 : size.width * 0.77,
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: InkWell(
                     onTap: () => Navigator.of(context).push(
                       SlideRightRoute(
@@ -1152,6 +1154,15 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       width: size.width / 2,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
+                        color: Colors.grey.shade300,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withValues(alpha: 0.15),
+                            spreadRadius: 1,
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
                       alignment: chatMap['message'] != "" &&
                               widget.isDeviceConnected == true
@@ -1164,7 +1175,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                               child: CachedNetworkImage(
                                 fit: BoxFit.cover,
                                 imageUrl: chatMap['message'],
-                                memCacheWidth: 400, // Optimize memory usage
+                                memCacheWidth: 400,
                                 memCacheHeight: 400,
                                 fadeInDuration: const Duration(milliseconds: 200),
                                 placeholder: (context, url) => Container(
@@ -1180,307 +1191,337 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
             ],
           );
         } else if (chatMap['type'] == 'voice') {
-          // Voice message rendering for group chat
+          // Voice message rendering for group chat - matching 1-1 chat theme
+          final bool isMe = chatMap['sendBy'] == widget.user.displayName;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               const SizedBox(width: 2),
-              chatMap['sendBy'] != widget.user.displayName
-                  ? Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      height: size.width / 13,
-                      width: size.width / 13,
-                      child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
-                        maxRadius: 30,
-                      ),
-                    )
-                  : Container(),
+              if (!isMe)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  height: size.width / 13,
+                  width: size.width / 13,
+                  child: CircleAvatar(
+                    backgroundImage: chatMap['avatar'] != null 
+                        ? NetworkImage(chatMap['avatar']) 
+                        : null,
+                    backgroundColor: Colors.grey.shade300,
+                    maxRadius: 30,
+                    child: chatMap['avatar'] == null 
+                        ? Icon(Icons.person, color: Colors.grey.shade600, size: 18)
+                        : null,
+                  ),
+                ),
               Flexible(
                 child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                   padding: const EdgeInsets.all(10),
-                  constraints: BoxConstraints(
-                    maxWidth: size.width * 0.7,
-                  ),
+                  constraints: BoxConstraints(maxWidth: size.width * 0.7),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: chatMap['sendBy'] == widget.user.displayName
-                        ? AppTheme.gray800
-                        : AppTheme.primaryDark,
+                    borderRadius: isMe
+                        ? const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(18),
+                            bottomRight: Radius.circular(4),
+                          )
+                        : const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(4),
+                            bottomRight: Radius.circular(18),
+                          ),
+                    color: isMe ? AppTheme.sentBubble : AppTheme.receivedBubble,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.15),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                   child: VoiceMessagePlayer(
                     audioUrl: chatMap['message'],
-                    isMe: chatMap['sendBy'] == widget.user.displayName,
+                    isMe: isMe,
                   ),
                 ),
               ),
-              chatMap['sendBy'] == widget.user.displayName
-                  ? Container(
-                      margin: const EdgeInsets.only(bottom: 8, left: 4),
-                      height: size.width / 13,
-                      width: size.width / 13,
-                      child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
-                        maxRadius: 30,
-                      ),
-                    )
-                  : Container(),
             ],
           );
         } else if (chatMap['type'] == 'file') {
-          // File message rendering for group chat
+          // File message rendering for group chat - matching 1-1 chat theme
+          final bool isMe = chatMap['sendBy'] == widget.user.displayName;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               const SizedBox(width: 2),
-              chatMap['sendBy'] != widget.user.displayName
-                  ? Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      height: size.width / 13,
-                      width: size.width / 13,
-                      child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
-                        maxRadius: 30,
-                      ),
-                    )
-                  : Container(),
+              if (!isMe)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  height: size.width / 13,
+                  width: size.width / 13,
+                  child: CircleAvatar(
+                    backgroundImage: chatMap['avatar'] != null 
+                        ? NetworkImage(chatMap['avatar']) 
+                        : null,
+                    backgroundColor: Colors.grey.shade300,
+                    maxRadius: 30,
+                    child: chatMap['avatar'] == null 
+                        ? Icon(Icons.person, color: Colors.grey.shade600, size: 18)
+                        : null,
+                  ),
+                ),
               Flexible(
                 child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                  constraints: BoxConstraints(
-                    maxWidth: size.width * 0.7,
-                  ),
+                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  constraints: BoxConstraints(maxWidth: size.width * 0.7),
                   child: FileMessageWidget(
                     fileUrl: chatMap['message'],
                     fileName: chatMap['fileName'] ?? 'Unknown file',
                     fileSize: chatMap['fileSize'] ?? 0,
                     fileExtension: chatMap['fileExtension'] ?? 'bin',
-                    isMe: chatMap['sendBy'] == widget.user.displayName,
+                    isMe: isMe,
                   ),
                 ),
               ),
-              chatMap['sendBy'] == widget.user.displayName
-                  ? Container(
-                      margin: const EdgeInsets.only(bottom: 8, left: 4),
-                      height: size.width / 13,
-                      width: size.width / 13,
-                      child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
-                        maxRadius: 30,
-                      ),
-                    )
-                  : Container(),
             ],
           );
         } else if (chatMap['type'] == 'notify') {
+          // System notification message - matching 1-1 chat theme
           return Container(
             width: size.width,
             alignment: Alignment.center,
+            margin: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                color: Colors.black87,
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey[200],
               ),
               child: Text(
                 chatMap['message'],
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: Colors.grey[700],
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
           );
         } else if (chatMap['type'] == 'location') {
+          final bool isMe = chatMap['sendBy'] == widget.user.displayName;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
-              const SizedBox(
-                width: 2,
-              ),
-              chatMap['sendBy'] != widget.user.displayName
-                  ? Container(
-                      margin: const EdgeInsets.only(bottom: 5),
-                      height: size.width / 13,
-                      width: size.width / 13,
-                      child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
-                        maxRadius: 30,
-                      ),
-                    )
-                  : Container(),
+              const SizedBox(width: 2),
+              if (!isMe)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 5),
+                  height: size.width / 13,
+                  width: size.width / 13,
+                  child: CircleAvatar(
+                    backgroundImage: chatMap['avatar'] != null 
+                        ? NetworkImage(chatMap['avatar']) 
+                        : null,
+                    backgroundColor: Colors.grey.shade300,
+                    maxRadius: 30,
+                    child: chatMap['avatar'] == null 
+                        ? Icon(Icons.person, color: Colors.grey.shade600, size: 18)
+                        : null,
+                  ),
+                ),
               GestureDetector(
                 onLongPress: () {
-                  if (chatMap['sendBy'] == widget.user.displayName) {
-                    changeMessage(
-                        index, length, chatMap['message'], chatMap['type']);
+                  if (isMe) {
+                    changeMessage(index, length, chatMap['message'], chatMap['type']);
                   }
                 },
                 child: Container(
-                  width: chatMap['sendBy'] == widget.user.displayName
-                      ? size.width * 0.98
-                      : size.width * 0.77,
-                  alignment: chatMap['sendBy'] == widget.user.displayName
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    width: size.width / 2,
-                    // constraints: BoxConstraints( maxWidth: size.width / 1.5),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    margin:
-                        const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      color: Colors.grey.shade800,
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4.0),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(100),
-                                color: AppTheme.accent,
-                              ),
-                              child: const Icon(
-                                Icons.location_on_outlined,
-                                color: Colors.white70,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    "Vi tri truc tiep",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                  Text(
-                                    // int.parse(map['timeSpend'].toString()) < 60 ?
-                                    "Da bat dau chia se",
-                                    // : (map['timeSpend'] / 60).toString() + "p "+ (map['timeSpend'] % 60).toString() + "s",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade300,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            takeUserLocation(chatMap['uid']);
-                          },
-                          child: Container(
-                            // margin: EdgeInsets.only(right: 5,left: 0),
-                            width: size.width,
-                            height: 25,
+                  width: size.width / 2,
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: isMe
+                        ? const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(18),
+                            bottomRight: Radius.circular(4),
+                          )
+                        : const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(4),
+                            bottomRight: Radius.circular(18),
+                          ),
+                    color: isMe ? AppTheme.sentBubble : AppTheme.receivedBubble,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.15),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey.shade400,
+                              shape: BoxShape.circle,
+                              color: isMe ? Colors.white24 : AppTheme.accent.withValues(alpha: 0.2),
                             ),
-                            child: Container(
-                              alignment: Alignment.center,
-                              child: const Text("Xem vi tri"),
+                            child: Icon(
+                              Icons.location_on,
+                              color: isMe ? Colors.white : AppTheme.accent,
+                              size: 18,
                             ),
                           ),
-                        )
-                      ],
-                    ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Live Location",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: isMe ? Colors.white : Colors.grey[900],
+                                  ),
+                                ),
+                                Text(
+                                  "Sharing started",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isMe ? Colors.white70 : Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () => takeUserLocation(chatMap['uid']),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: isMe ? Colors.white24 : AppTheme.accent,
+                          ),
+                          child: Text(
+                            "View Location",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
                 ),
               ),
             ],
           );
         } else if (chatMap['type'] == 'locationed') {
+          final bool isMe = chatMap['sendBy'] == widget.user.displayName;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
-              const SizedBox(
-                width: 2,
-              ),
-              chatMap['sendBy'] != widget.user.displayName
-                  ? Container(
-                      margin: const EdgeInsets.only(bottom: 5),
-                      height: size.width / 13,
-                      width: size.width / 13,
-                      child: CircleAvatar(
-                        backgroundImage: NetworkImage(chatMap['avatar']),
-                        maxRadius: 30,
-                      ),
-                    )
-                  : Container(),
+              const SizedBox(width: 2),
+              if (!isMe)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 5),
+                  height: size.width / 13,
+                  width: size.width / 13,
+                  child: CircleAvatar(
+                    backgroundImage: chatMap['avatar'] != null 
+                        ? NetworkImage(chatMap['avatar']) 
+                        : null,
+                    backgroundColor: Colors.grey.shade300,
+                    maxRadius: 30,
+                    child: chatMap['avatar'] == null 
+                        ? Icon(Icons.person, color: Colors.grey.shade600, size: 18)
+                        : null,
+                  ),
+                ),
               GestureDetector(
                 onLongPress: () {
-                  if (chatMap['sendBy'] == widget.user.displayName) {
-                    changeMessage(
-                        index, length, chatMap['message'], chatMap['type']);
+                  if (isMe) {
+                    changeMessage(index, length, chatMap['message'], chatMap['type']);
                   }
                 },
                 child: Container(
-                  width: chatMap['sendBy'] == widget.user.displayName
-                      ? size.width * 0.98
-                      : size.width * 0.77,
-                  alignment: chatMap['sendBy'] == widget.user.displayName
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    width: size.width / 1.8,
-                    // constraints: BoxConstraints( maxWidth: size.width / 1.5),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    margin:
-                        const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      color: Colors.grey.shade700,
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4.0),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(100),
-                                color: AppTheme.accent,
-                              ),
-                              child: const Icon(
-                                Icons.location_on_outlined,
-                                color: Colors.white70,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            const Text(
-                              "Chia sẻ vị trí đã kết thúc",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
+                  constraints: BoxConstraints(maxWidth: size.width * 0.65),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: isMe
+                        ? const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(18),
+                            bottomRight: Radius.circular(4),
+                          )
+                        : const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(4),
+                            bottomRight: Radius.circular(18),
+                          ),
+                    color: Colors.grey[300],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.15),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey[400],
                         ),
-                      ],
-                    ),
+                        child: Icon(
+                          Icons.location_off,
+                          color: Colors.grey[600],
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          "Location sharing ended",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
