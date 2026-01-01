@@ -118,11 +118,11 @@ class AIChatService {
     debugPrint('🗑️ AIChatService: Conversation history cleared');
   }
   
-  // Rate limit handling
+  // Rate limit handling - increased delays for Gemini API
   static int _rateLimitRetryCount = 0;
-  static const int _maxRetries = 3;
+  static const int _maxRetries = 2; // Reduced retries, show message faster
   static DateTime? _lastRateLimitTime;
-  static const int _rateLimitDelaySeconds = 5; // Initial delay
+  static const int _rateLimitDelaySeconds = 15; // Increased from 5 to 15 seconds
   
   /// Send message to AI and get response with retry logic for rate limits
   static Future<AIChatResponse> sendMessage(String message, {int retryCount = 0}) async {
@@ -134,17 +134,20 @@ class AIChatService {
       );
     }
     
-    // Check if we need to wait due to previous rate limit
+    // Check if we need to wait due to previous rate limit (30 second cooldown)
     if (_lastRateLimitTime != null) {
-      final waitTime = _rateLimitDelaySeconds * (retryCount + 1);
+      final cooldownSeconds = 30;
       final elapsed = DateTime.now().difference(_lastRateLimitTime!).inSeconds;
-      if (elapsed < waitTime) {
-        final remaining = waitTime - elapsed;
+      if (elapsed < cooldownSeconds) {
+        final remaining = cooldownSeconds - elapsed;
         return AIChatResponse(
           success: false,
-          message: 'Please wait $remaining seconds before trying again (rate limit).',
+          message: '⏳ Please wait $remaining seconds before trying again.\n\nThe server needs time to reset.',
           error: 'RATE_LIMIT_WAIT',
         );
+      } else {
+        // Cooldown finished, reset
+        _lastRateLimitTime = null;
       }
     }
     
@@ -282,20 +285,11 @@ class AIChatService {
               _conversationHistory.removeLast();
             }
             
-            if (retryCount < _maxRetries) {
-              final waitSeconds = _rateLimitDelaySeconds * (retryCount + 1);
-              debugPrint('⏳ AIChatService: Rate limited. Retrying in $waitSeconds seconds (attempt ${retryCount + 1}/$_maxRetries)');
-              
-              // Wait with exponential backoff
-              await Future.delayed(Duration(seconds: waitSeconds));
-              
-              // Retry the request
-              return sendMessage(message, retryCount: retryCount + 1);
-            }
-            
+            // Don't auto-retry, let user know immediately
+            // Auto-retry causes confusion and long waits
             return AIChatResponse(
               success: false,
-              message: 'Rate limit exceeded. Please wait a moment and try again.\n\nTip: If this keeps happening, consider getting your own API key from Google AI Studio.',
+              message: '⏳ Server is busy (rate limit). Please wait 30-60 seconds and try again.\n\n💡 Tip: Get your own FREE API key from Google AI Studio for unlimited usage:\nhttps://aistudio.google.com/app/apikey',
               error: 'RATE_LIMIT',
             );
           }

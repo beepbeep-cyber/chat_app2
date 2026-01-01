@@ -168,10 +168,9 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           .collection('chats')
           .add(chatData);
       
-      // For chat history, show "[Encrypted]" or first few chars
-      String historyPreview = encryptedMessage == message 
-          ? "${widget.user.displayName}: $message"
-          : "${widget.user.displayName}: 🔒 Encrypted message";
+      // For chat history, show actual message (not encrypted indicator)
+      // The message shown in history should be the ORIGINAL readable message
+      String historyPreview = "${widget.user.displayName}: $message";
           
       for (int i = 0; i < memberList.length; i++) {
         await _firestore
