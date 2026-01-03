@@ -19,6 +19,28 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  // Set Firebase Auth persistence to LOCAL (persist across app restarts)
+  // This ensures user stays logged in after killing the app
+  try {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    if (kDebugMode) {
+      debugPrint('✅ [Main] Firebase Auth persistence set to LOCAL');
+    }
+  } catch (e) {
+    // setPersistence may throw on some platforms, ignore it
+    if (kDebugMode) {
+      debugPrint('⚠️ [Main] setPersistence not supported on this platform: $e');
+    }
+  }
+  
+  // Debug: Check if user is already logged in at app start
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (kDebugMode) {
+    debugPrint('🚀 [Main] App starting...');
+    debugPrint('🔑 [Main] Current user at startup: ${currentUser?.email ?? "NULL"}');
+    debugPrint('🔑 [Main] User UID: ${currentUser?.uid ?? "NULL"}');
+  }
+  
   runApp(const MyApp());
 }
 
@@ -79,6 +101,13 @@ class _AppLauncherState extends State<AppLauncher> {
 
   Future<void> _checkBiometricRequirement() async {
     try {
+      // Debug: Check current auth state first
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (kDebugMode) {
+        debugPrint('🔐 [AppLauncher] Checking biometric...');
+        debugPrint('🔑 [AppLauncher] Current user: ${currentUser?.email ?? "NULL"}');
+      }
+      
       // Check if biometric is enabled and needed
       final needsAuth = await _biometricService.needsReAuthentication();
       
