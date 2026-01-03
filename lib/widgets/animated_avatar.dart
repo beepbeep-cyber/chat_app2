@@ -212,73 +212,129 @@ class _AnimatedAvatarState extends State<AnimatedAvatar>
   }
 }
 
-/// Group Avatar Widget for group chats
+/// Group Avatar Widget for group chats - Modern gradient circle with group icon
 class GroupAvatar extends StatelessWidget {
-  final List<String?> imageUrls;
-  final List<String> names;
+  final String? imageUrl;
+  final String groupName;
   final double size;
+  final int memberCount;
 
   const GroupAvatar({
     super.key,
-    required this.imageUrls,
-    required this.names,
+    this.imageUrl,
+    required this.groupName,
     this.size = 56,
+    this.memberCount = 0,
   });
+
+  String _getInitials() {
+    final parts = groupName.trim().split(' ');
+    if (parts.isEmpty || parts[0].isEmpty) return 'G';
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final displayCount = imageUrls.length.clamp(0, 3);
-    final miniSize = size * 0.55;
-
-    return SizedBox(
+    return Container(
       width: size,
       height: size,
-      child: Stack(
-        children: List.generate(displayCount, (index) {
-          final offset = index * (size * 0.25);
-          return Positioned(
-            left: offset,
-            top: offset * 0.5,
-            child: Container(
-              width: miniSize,
-              height: miniSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: imageUrl != null && imageUrl!.isNotEmpty && imageUrl!.startsWith('http')
+          ? ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: imageUrl!,
+                fit: BoxFit.cover,
+                memCacheWidth: (size * 2).toInt(),
+                memCacheHeight: (size * 2).toInt(),
+                placeholder: (context, url) => _buildDefaultGroupIcon(),
+                errorWidget: (context, url, error) => _buildDefaultGroupIcon(),
               ),
-              child: ClipOval(
-                child: imageUrls[index] != null && imageUrls[index]!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: imageUrls[index]!,
-                        fit: BoxFit.cover,
-                        memCacheWidth: (miniSize * 2).toInt(),
-                        memCacheHeight: (miniSize * 2).toInt(),
-                      )
-                    : Container(
-                        color: AppTheme.gray100,
-                        child: Center(
-                          child: Text(
-                            names[index].isNotEmpty ? names[index][0].toUpperCase() : '?',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: miniSize * 0.4,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.gray600,
-                            ),
-                          ),
-                        ),
-                      ),
+            )
+          : _buildDefaultGroupIcon(),
+    );
+  }
+
+  Widget _buildDefaultGroupIcon() {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Group icon or initials
+          Center(
+            child: memberCount > 0
+                ? Icon(
+                    Icons.group_rounded,
+                    color: Colors.white,
+                    size: size * 0.5,
+                  )
+                : Text(
+                    _getInitials(),
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: size * 0.35,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+          ),
+          // Member count badge
+          if (memberCount > 0)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: size * 0.35,
+                height: size * 0.35,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.success,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.success.withValues(alpha: 0.4),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    memberCount > 99 ? '99+' : memberCount.toString(),
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: size * 0.15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
-          );
-        }),
+        ],
       ),
     );
   }

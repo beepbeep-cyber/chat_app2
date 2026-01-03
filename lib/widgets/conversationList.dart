@@ -157,13 +157,20 @@ class _ConversationListState extends State<ConversationList>
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    AnimatedAvatar(
-                      imageUrl: widget.chatHistory['avatar'],
-                      name: widget.chatHistory['name'] ?? 'Unknown',
-                      size: 48,
-                      isOnline: widget.chatHistory['status'] == 'Online',
-                      showStatus: false,
-                    ),
+                    widget.chatHistory['datatype'] == 'group'
+                        ? GroupAvatar(
+                            imageUrl: widget.chatHistory['avatar'],
+                            groupName: widget.chatHistory['name'] ?? 'Group',
+                            size: 48,
+                            memberCount: 0,
+                          )
+                        : AnimatedAvatar(
+                            imageUrl: widget.chatHistory['avatar'],
+                            name: widget.chatHistory['name'] ?? 'Unknown',
+                            size: 48,
+                            isOnline: widget.chatHistory['status'] == 'Online',
+                            showStatus: false,
+                          ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -394,14 +401,21 @@ class _ConversationListState extends State<ConversationList>
           ),
           child: Row(
             children: [
-              // Avatar with online status
-              AnimatedAvatar(
-                imageUrl: widget.chatHistory['avatar'],
-                name: widget.chatHistory['name'] ?? 'Unknown',
-                size: 56,
-                isOnline: isOnline,
-                showStatus: widget.chatHistory['datatype'] != 'group',
-              ),
+              // Avatar - use GroupAvatar for groups, AnimatedAvatar for users
+              widget.chatHistory['datatype'] == 'group'
+                  ? GroupAvatar(
+                      imageUrl: widget.chatHistory['avatar'],
+                      groupName: widget.chatHistory['name'] ?? 'Group',
+                      size: 56,
+                      memberCount: 0,
+                    )
+                  : AnimatedAvatar(
+                      imageUrl: widget.chatHistory['avatar'],
+                      name: widget.chatHistory['name'] ?? 'Unknown',
+                      size: 56,
+                      isOnline: isOnline,
+                      showStatus: true,
+                    ),
               const SizedBox(width: 12),
               // Content
               Expanded(

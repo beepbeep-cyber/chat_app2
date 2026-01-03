@@ -27,6 +27,7 @@ import 'package:uuid/uuid.dart';
 
 import '../chat_screen.dart';
 import '../../resources/methods.dart';
+import '../../widgets/animated_avatar.dart';
 
 // ignore: must_be_immutable
 class GroupChatRoom extends StatefulWidget {
@@ -610,14 +611,15 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
+        backgroundColor: AppTheme.backgroundLight,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: AppTheme.primaryDark,
           elevation: 2,
-          shadowColor: Colors.black.withAlpha(76),
+          shadowColor: Colors.black.withValues(alpha: 0.3),
           flexibleSpace: SafeArea(
             child: Container(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(right: 10),
               child: Row(
                 children: <Widget>[
                   IconButton(
@@ -627,17 +629,18 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                           SlideRightRoute(
                               page: HomeScreen(user: widget.user)));
                     },
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.arrow_back_ios,
-                      color: AppTheme.gray100,
+                      color: AppTheme.textWhite,
                       size: 22,
                     ),
                   ),
                   const SizedBox(width: 2),
-                  const CircleAvatar(
-                    backgroundImage: CachedNetworkImageProvider(
-                        'https://firebasestorage.googleapis.com/v0/b/chatapptest2-93793.appspot.com/o/images%2F2a2c7410-7b06-11ed-aa52-c50d48cba6ef.jpg?alt=media&token=1b11fc5a-2294-4db8-94bf-7bd083f54b98'),
-                    maxRadius: 20,
+                  // Use GroupAvatar for consistent styling
+                  GroupAvatar(
+                    groupName: widget.groupName,
+                    size: 40,
+                    memberCount: memberList.length,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -647,20 +650,33 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       children: [
                         Text(
                           widget.groupName,
-                          style: TextStyle(
-                            fontSize: 17,
+                          style: AppTheme.titleMedium.copyWith(
+                            color: AppTheme.textWhite,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.gray100,
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
-                        Text(
-                          '${memberList.length} members',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppTheme.gray400,
-                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AppTheme.online,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${memberList.length} members',
+                              style: const TextStyle(
+                                color: AppTheme.textHint,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -678,10 +694,10 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                     isDeviceConnected: widget.isDeviceConnected,
                                   )));
                     },
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: AppTheme.gray300,
-                      size: 24,
+                    icon: const Icon(
+                      Icons.settings_outlined,
+                      color: AppTheme.textWhite,
+                      size: 26,
                     ),
                   ),
                 ],
@@ -712,7 +728,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                   : Container(),
               Expanded(
                 child: Container(
-                    color: Colors.white24,
+                    color: Colors.transparent,
                     width: size.width,
                     child: StreamBuilder<QuerySnapshot>(
                       stream: _firestore
