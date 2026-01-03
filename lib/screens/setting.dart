@@ -234,10 +234,13 @@ class _SettingState extends State<Setting> {
   }
 
   Future<void> logOuttt() async {
+    // Check if widget is still mounted before showing dialog
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.surfaceLight,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -266,7 +269,7 @@ class _SettingState extends State<Setting> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Cancel',
               style: TextStyle(color: Colors.grey[600], fontSize: 15),
@@ -274,19 +277,20 @@ class _SettingState extends State<Setting> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
-              setState(() {
-                isLoading = true;
-              });
+              // Close dialog first
+              Navigator.pop(dialogContext);
+              
+              // Perform logout operations
               await turnOffStatus();
               await logOut();
-              setState(() {
-                isLoading = false;
-              });
-              if (mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                    SlideRightRoute(page: Login()),
-                    (Route<dynamic> route) => false);
+              
+              // Use root navigator context for navigation after logout
+              // This avoids the deactivated widget ancestor issue
+              if (dialogContext.mounted) {
+                Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
+                  SlideRightRoute(page: Login()),
+                  (Route<dynamic> route) => false,
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1456,7 +1460,7 @@ class _SettingState extends State<Setting> {
           Switch(
             value: _isBiometricEnabled,
             onChanged: _isBiometricAvailable ? _toggleBiometric : null,
-            activeColor: Colors.blue[700],
+            activeThumbColor: Colors.blue[700],
             activeTrackColor: Colors.blue[200],
             inactiveThumbColor: Colors.grey[400],
             inactiveTrackColor: Colors.grey[200],
