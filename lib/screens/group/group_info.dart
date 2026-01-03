@@ -571,60 +571,88 @@ class _GroupInfoState extends State<GroupInfo> {
 
       String uid = _auth.currentUser!.uid;
 
-      await _firestore
-          .collection('groups')
-          .doc(widget.groupId)
-          .collection('chats')
-          .add({
-        "message": "${widget.user.displayName} has left the group",
-        "type": "notify",
-        "time": timeForMessage(DateTime.now().toString()),
-        'timeStamp': DateTime.now(),
-      });
-      for (int i = 0; i < membersList.length; i++) {
+      try {
+        // Add notification message to group chat
+        await _firestore
+            .collection('groups')
+            .doc(widget.groupId)
+            .collection('chats')
+            .add({
+          "message": "${widget.user.displayName} has left the group",
+          "type": "notify",
+          "time": timeForMessage(DateTime.now().toString()),
+          'timeStamp': DateTime.now(),
+        });
+
+        // Remove current user from membersList FIRST
+        membersList.removeWhere((member) => member['uid'] == uid);
+
+        // Update group members in Firestore
+        await _firestore.collection('groups').doc(widget.groupId).update({
+          "members": membersList,
+        });
+
+        // Update chat history for remaining members
+        for (var member in membersList) {
+          await _firestore
+              .collection('users')
+              .doc(member['uid'])
+              .collection('chatHistory')
+              .doc(widget.groupId)
+              .update({
+            'lastMessage': "${widget.user.displayName} has left the group",
+            'type': "notify",
+            'time': timeForMessage(DateTime.now().toString()),
+            'timeStamp': DateTime.now(),
+            'isRead': false,
+          });
+        }
+
+        // Delete user's group reference
         await _firestore
             .collection('users')
-            .doc(membersList[i]['uid'])
+            .doc(uid)
+            .collection('groups')
+            .doc(widget.groupId)
+            .delete();
+
+        // Delete user's chat history for this group
+        await _firestore
+            .collection('users')
+            .doc(uid)
             .collection('chatHistory')
             .doc(widget.groupId)
-            .update({
-          'lastMessage': "${widget.user.displayName} has left the group",
-          'type': "notify",
-          'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
-          'isRead': false,
+            .delete();
+
+        // Navigate to home
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            SlideRightRoute(page: HomeScreen(user: widget.user)),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        setState(() {
+          isLoading = false;
         });
-      }
-      for (int i = 0; i < membersList.length; i++) {
-        if (membersList[i]['uid'] == uid) {
-          membersList.removeAt(i);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error leaving group: $e'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
         }
       }
-
-      await _firestore.collection('groups').doc(widget.groupId).update({
-        "members": membersList,
-      });
-      await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('groups')
-          .doc(widget.groupId)
-          .delete();
-      await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('chatHistory')
-          .doc(widget.groupId)
-          .delete();
-      Navigator.push(
-        context,
-        SlideRightRoute(
-            page: HomeScreen(
-                  user: widget.user,
-                )),
-      );
     } else {
-      if (kDebugMode) { debugPrint("Cant leave group!"); }
+      // Admin cannot leave - show message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Admin cannot leave the group. Transfer admin role first.'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
     }
   }
 
@@ -741,11 +769,12 @@ class _GroupInfoState extends State<GroupInfo> {
                       ],
                     ),
                     child: ListTile(
-                      onTap: () {
+                      onTap: () async {
                         if (widget.isDeviceConnected == false) {
                           showDialogInternetCheck();
                         } else {
-                          Navigator.push(
+                          // Navigate and wait for result, then refresh
+                          await Navigator.push(
                             context,
                             SlideRightRoute(
                               page: AddMemberInGroup(
@@ -756,6 +785,8 @@ class _GroupInfoState extends State<GroupInfo> {
                               ),
                             ),
                           );
+                          // Refresh member list after returning
+                          getGroupMembers();
                         }
                       },
                       leading: Container(
