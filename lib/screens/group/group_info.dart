@@ -218,7 +218,11 @@ class _GroupInfoState extends State<GroupInfo> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -233,7 +237,7 @@ class _GroupInfoState extends State<GroupInfo> {
               child: Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: AppTheme.gray300,
                   borderRadius: BorderRadius.circular(2),
@@ -244,75 +248,45 @@ class _GroupInfoState extends State<GroupInfo> {
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: AppTheme.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.auto_delete, color: AppTheme.warning, size: 24),
+                  child: Icon(Icons.auto_delete, color: AppTheme.warning, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Auto-delete Messages',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryDark,
-                        ),
-                      ),
-                      Text(
-                        'Automatically delete old messages',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.gray600,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Auto-delete Messages',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryDark,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            // Auto-delete options
-            _buildAutoDeleteOption('Off', 'Messages will not be deleted', Icons.block, null),
-            _buildAutoDeleteOption('1 Minute', 'Delete after 1 minute', Icons.timer, 1),
-            _buildAutoDeleteOption('5 Minutes', 'Delete after 5 minutes', Icons.timer_3, 5),
-            _buildAutoDeleteOption('1 Hour', 'Delete after 1 hour', Icons.schedule, 60),
-            _buildAutoDeleteOption('1 Day', 'Delete after 24 hours', Icons.calendar_today, 1440),
-            _buildAutoDeleteOption('1 Week', 'Delete after 7 days', Icons.calendar_month, 10080),
             const SizedBox(height: 16),
-            // Delete All Messages Button
-            Container(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showDeleteAllMessagesConfirmation();
-                },
-                icon: const Icon(Icons.delete_forever, color: Colors.white),
-                label: const Text(
-                  'Delete All Messages',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.error,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            // Auto-delete options in scrollable list
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildAutoDeleteOption('Off', 'Not deleted', Icons.block, null),
+                    _buildAutoDeleteOption('1 Minute', '1 min', Icons.timer, 1),
+                    _buildAutoDeleteOption('5 Minutes', '5 mins', Icons.timer_3, 5),
+                    _buildAutoDeleteOption('1 Hour', '1 hour', Icons.schedule, 60),
+                    _buildAutoDeleteOption('1 Day', '24 hours', Icons.calendar_today, 1440),
+                    _buildAutoDeleteOption('1 Week', '7 days', Icons.calendar_month, 10080),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -321,43 +295,52 @@ class _GroupInfoState extends State<GroupInfo> {
 
   Widget _buildAutoDeleteOption(String title, String subtitle, IconData icon, int? minutes) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
         border: Border.all(color: AppTheme.gray200 ?? Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: ListTile(
+      child: InkWell(
         onTap: () {
           _saveAutoDeleteSetting(minutes);
           Navigator.pop(context);
         },
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppTheme.gray100,
-            borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppTheme.gray100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppTheme.gray700, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.primaryDark,
+                  ),
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.gray500,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, color: AppTheme.gray400, size: 18),
+            ],
           ),
-          child: Icon(icon, color: AppTheme.gray700, size: 20),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.primaryDark,
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppTheme.gray600,
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
         ),
       ),
     );
