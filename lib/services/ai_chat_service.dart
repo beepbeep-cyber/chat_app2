@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'remote_config_service.dart';
@@ -44,7 +46,10 @@ class AIChatService {
       await remoteConfig.initialize();
     }
     
-    // Get API key from Remote Config (if no custom key set)
+    // Priority 1: Check user's custom API key from Firestore
+    await _loadUserApiKey();
+    
+    // Priority 2: Get API key from Remote Config (if no custom key set)
     if (_customApiKey == null || _customApiKey!.isEmpty) {
       final remoteApiKey = remoteConfig.geminiApiKey;
       if (remoteApiKey.isNotEmpty) {
@@ -70,6 +75,30 @@ class AIChatService {
       // No model in Remote Config, use default
       _model = _defaultModel;
       debugPrint('📡 AIChatService: No model in Remote Config, using default: $_model');
+    }
+  }
+  
+  /// Load user's custom API key from Firestore
+  static Future<void> _loadUserApiKey() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      
+      if (doc.exists && doc.data() != null) {
+        final apiKey = doc.data()!['geminiApiKey'] as String?;
+        if (apiKey != null && apiKey.isNotEmpty) {
+          _customApiKey = apiKey;
+          _apiKey = apiKey;
+          debugPrint('✅ AIChatService: Using user\'s custom API key from Firestore');
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ AIChatService: Error loading user API key: $e');
     }
   }
   

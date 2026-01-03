@@ -6,13 +6,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:my_porject/screens/login_screen.dart';
+import 'package:my_porject/services/ai_chat_service.dart';
 import 'package:my_porject/services/biometric_auth_service.dart';
 import 'package:my_porject/services/fcm_service.dart';
 import 'package:my_porject/services/user_presence_service.dart';
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:my_porject/widgets/page_transitions.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 // ignore: must_be_immutable
@@ -850,6 +853,51 @@ class _SettingState extends State<Setting> {
                             
                             const SizedBox(height: 24),
                             
+                            // AI Settings Section
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withValues(alpha: 0.1),
+                                    spreadRadius: 2,
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.smart_toy, color: Colors.purple[700], size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "AI Assistant",
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey[800],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Divider(height: 1, color: Colors.grey[200]),
+                                  
+                                  // AI API Key Setting
+                                  _buildAIApiKeySetting(map),
+                                ],
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
                             // Settings Section
                             Container(
                               margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -1106,6 +1154,261 @@ class _SettingState extends State<Setting> {
     );
   }
   
+  Widget _buildAIApiKeySetting(Map<String, dynamic> map) {
+    final hasCustomKey = map['geminiApiKey'] != null && (map['geminiApiKey'] as String).isNotEmpty;
+    
+    return InkWell(
+      onTap: () => _showAIApiKeyDialog(map),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.key, color: Colors.purple[700], size: 24),
+            ),
+            const SizedBox(width: 16),
+            // Text
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Gemini API Key",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[900],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    hasCustomKey 
+                      ? "✓ Custom key configured" 
+                      : "Use your own API key (recommended)",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: hasCustomKey ? Colors.green[600] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _showAIApiKeyDialog(Map<String, dynamic> map) {
+    final TextEditingController apiKeyController = TextEditingController(
+      text: map['geminiApiKey'] ?? '',
+    );
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.smart_toy, color: Colors.purple[700], size: 24),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'AI API Key',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Info text
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Get your FREE API key to avoid rate limits',
+                        style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Get API Key button
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final url = Uri.parse('https://aistudio.google.com/app/apikey');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                icon: Icon(Icons.open_in_new, size: 18),
+                label: const Text('Get Free API Key'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.purple[700],
+                  side: BorderSide(color: Colors.purple[300]!),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // API Key input
+              TextField(
+                controller: apiKeyController,
+                decoration: InputDecoration(
+                  labelText: 'Paste your API Key',
+                  hintText: 'AIza...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.paste),
+                    onPressed: () async {
+                      final data = await Clipboard.getData('text/plain');
+                      if (data?.text != null) {
+                        apiKeyController.text = data!.text!;
+                      }
+                    },
+                  ),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 12),
+              
+              // Instructions
+              Text(
+                'Steps:\n1. Click "Get Free API Key" above\n2. Sign in with Google\n3. Click "Create API Key"\n4. Copy and paste here',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.5),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          // Clear button (if has key)
+          if (map['geminiApiKey'] != null && (map['geminiApiKey'] as String).isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _clearApiKey();
+              },
+              child: Text('Clear', style: TextStyle(color: Colors.red[600])),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _saveApiKey(apiKeyController.text.trim());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple[700],
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _saveApiKey(String apiKey) async {
+    if (apiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter an API key'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+      return;
+    }
+    
+    try {
+      // Save to Firestore (user's document)
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
+        'geminiApiKey': apiKey,
+      });
+      
+      // Update AIChatService immediately
+      AIChatService.setApiKey(apiKey);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ API Key saved! AI Bot is ready.'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving API key: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _clearApiKey() async {
+    try {
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
+        'geminiApiKey': FieldValue.delete(),
+      });
+      
+      // Clear from AIChatService and revert to Remote Config
+      await AIChatService.clearCustomApiKey();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('API Key cleared. Using shared key.'),
+            backgroundColor: AppTheme.textSecondary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildBiometricToggle() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
