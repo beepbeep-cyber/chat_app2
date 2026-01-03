@@ -289,7 +289,7 @@ class AIChatService {
             // Auto-retry causes confusion and long waits
             return AIChatResponse(
               success: false,
-              message: '⏳ Server is busy (rate limit). Please wait 30-60 seconds and try again.\n\n💡 Tip: Get your own FREE API key from Google AI Studio for unlimited usage:\nhttps://aistudio.google.com/app/apikey',
+              message: '⏳ Server is busy (rate limit). Please wait 30-60 seconds and try again.\n\n💡 To fix this permanently:\n1. Go to: https://aistudio.google.com/app/apikey\n2. Click "Create API Key"\n3. Copy the key\n4. Update in Firebase Remote Config → gemini_api_key',
               error: 'RATE_LIMIT',
             );
           }

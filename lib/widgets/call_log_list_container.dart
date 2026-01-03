@@ -30,9 +30,13 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
   getIcon(String? callStatus) {
     Icon _icon;
     double _iconSize = 18;
+    
+    // Normalize callStatus to lowercase for comparison
+    final status = callStatus?.toLowerCase() ?? '';
 
-    switch (callStatus) {
+    switch (status) {
       case 'dialled':
+      case 'completed': // Legacy support
         _icon = Icon(
           Icons.call_made,
           size: _iconSize,
@@ -45,6 +49,14 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
           Icons.call_missed,
           color: AppTheme.error,
           size: _iconSize,
+        );
+        break;
+
+      case 'received':
+        _icon = Icon(
+          Icons.call_received,
+          size: _iconSize,
+          color: AppTheme.accent,
         );
         break;
 
@@ -87,7 +99,9 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                   itemCount: logList.length,
                     itemBuilder: (context, i) {
                       Log _log = logList[i];
-                      bool hasDialled = _log.callStatus == "dialled";
+                      // Check if current user made the call (dialled/completed = outgoing)
+                      final status = _log.callStatus?.toLowerCase() ?? '';
+                      bool hasDialled = status == "dialled" || status == "completed";
                       return GestureDetector(
                         onLongPress: () {
                           // showDialog(

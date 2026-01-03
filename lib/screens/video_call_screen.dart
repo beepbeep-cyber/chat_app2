@@ -179,17 +179,22 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   /// Save call log to local SQLite database for Recent Calls
   Future<void> _saveCallLog() async {
     try {
+      // callStatus values:
+      // 'dialled' - current user made the call (outgoing)
+      // 'received' - current user received the call (incoming, answered)
+      // 'missed' - current user missed the call (incoming, not answered)
+      // Since this screen is for the CALLER, it's always 'dialled'
       final log = Log(
         callerName: widget.userName,
         callerPic: widget.userAvatar ?? '',
         receiverName: widget.calleeName,
         receiverPic: widget.calleeAvatar ?? '',
-        callStatus: _remoteUid != null ? 'Completed' : 'Missed',
+        callStatus: 'dialled', // This user initiated the call
         timeStamp: DateTime.now().toString(),
       );
       
       await LogRepository.addLogs(log);
-      debugPrint('📞 VideoCall: Call log saved - Duration: ${_formatDuration(_callDuration)}');
+      debugPrint('📞 VideoCall: Call log saved - Status: dialled, Duration: ${_formatDuration(_callDuration)}');
     } catch (e) {
       debugPrint('❌ VideoCall: Error saving call log: $e');
     }
