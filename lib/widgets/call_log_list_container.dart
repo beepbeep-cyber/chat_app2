@@ -1,8 +1,14 @@
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:my_porject/db/log_repository.dart';
 import 'package:my_porject/resources/methods.dart';
+import 'package:my_porject/screens/video_call_screen.dart';
+import 'package:my_porject/widgets/page_transitions.dart';
 
 import '../models/log_model.dart';
 
@@ -14,6 +20,267 @@ class CallLogListContainer extends StatefulWidget {
 }
 
 class _CallLogListContainerState extends State<CallLogListContainer> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  /// Make a video call to a user from call log
+  Future<void> _makeVideoCall(Log log, bool hasDialled) async {
+    // Show loading
+    HapticFeedback.mediumImpact();
+    
+    // Check internet connection
+    final isConnected = await InternetConnection().hasInternetAccess;
+    if (!isConnected) {
+      if (mounted) {
+        _showNoConnectionDialog();
+      }
+      return;
+    }
+    
+    // Get the name of the person to call
+    // If hasDialled (outgoing call), we want to call the receiver
+    // If not hasDialled (incoming call), we want to call the caller
+    final String targetName = hasDialled ? log.receiverName! : log.callerName!;
+    final String targetAvatar = hasDialled ? (log.receiverPic ?? '') : (log.callerPic ?? '');
+    
+    try {
+      // Find user by name in Firestore
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('name', isEqualTo: targetName)
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('User "$targetName" not found'),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      
+      final userData = querySnapshot.docs.first.data();
+      final String targetUid = userData['uid'] ?? querySnapshot.docs.first.id;
+      final String? actualAvatar = userData['avatar'] ?? targetAvatar;
+      
+      // Get current user info
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please login to make calls'),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Generate unique channel name for this call
+      final channelName = ChatRoomId().chatRoomId(currentUser.displayName, targetName);
+      final callChannelName = '${channelName}_${DateTime.now().millisecondsSinceEpoch}';
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          SlideRightRoute(
+            page: VideoCallScreen(
+              channelName: callChannelName,
+              userName: currentUser.displayName ?? 'You',
+              userAvatar: currentUser.photoURL,
+              calleeName: targetName,
+              calleeAvatar: actualAvatar,
+              chatRoomId: channelName,
+              calleeUid: targetUid,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ CallLog: Error making call: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to make call: $e'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+  
+  void _showNoConnectionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.wifi_off, color: AppTheme.gray700, size: 28),
+            const SizedBox(width: 12),
+            const Text('No Connection'),
+          ],
+        ),
+        content: const Text('Please check your internet connection and try again.'),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.gray800,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showCallLogOptions(Log log, int index, bool hasDialled) {
+    final String targetName = hasDialled ? log.receiverName! : log.callerName!;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.gray300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accent.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.videocam, color: AppTheme.accent, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            targetName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            formatTimestampSafe(log.timeStamp),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.gray600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              // Video Call option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.videocam, color: AppTheme.success, size: 22),
+                ),
+                title: const Text(
+                  'Video Call',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                subtitle: Text(
+                  'Start a video call with $targetName',
+                  style: TextStyle(color: AppTheme.gray600, fontSize: 13),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _makeVideoCall(log, hasDialled);
+                },
+              ),
+              // Delete option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.delete_outline, color: AppTheme.error, size: 22),
+                ),
+                title: Text(
+                  'Delete',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.error,
+                  ),
+                ),
+                subtitle: Text(
+                  'Remove this call from history',
+                  style: TextStyle(color: AppTheme.gray600, fontSize: 13),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await LogRepository.deleteLogs(index);
+                  if (mounted) {
+                    setState(() {});
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Call log deleted'),
+                        backgroundColor: AppTheme.success,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
   // Helper to safely get avatar image
   ImageProvider? _getAvatarImage(bool hasDialled, Log log) {
     try {
@@ -103,32 +370,10 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                       final status = _log.callStatus?.toLowerCase() ?? '';
                       bool hasDialled = status == "dialled" || status == "completed";
                       return GestureDetector(
+                        onTap: () => _makeVideoCall(_log, hasDialled),
                         onLongPress: () {
-                          // showDialog(
-                          //     context: context,
-                          //     builder: (context) =>  AlertDialog(
-                          //       title: const Text("Delete this log?"),
-                          //       content: const Text("Are you sure to delete this log?"),
-                          //       actions: <Widget>[
-                          //         TextButton(
-                          //             onPressed: () async {
-                          //               Navigator.maybePop(context);
-                          //               await LogRepository.deleteLogs(i);
-                          //               if (mounted) {
-                          //                 setState(() {});
-                          //               }
-                          //             },
-                          //             child: const Text("Yes"),
-                          //         ),
-                          //         TextButton(
-                          //           onPressed: () async {
-                          //             Navigator.maybePop(context);
-                          //           },
-                          //           child: const Text("No"),
-                          //         ),
-                          //       ],
-                          //     )
-                          // );
+                          HapticFeedback.mediumImpact();
+                          _showCallLogOptions(_log, i, hasDialled);
                         },
                         child: Container(
                           margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -186,14 +431,25 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                               ),
                             ),
                             trailing: Container(
-                              padding: EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.blue.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                              child: Icon(
-                                Icons.phone,
-                                color: AppTheme.accent,
+                              child: const Icon(
+                                Icons.videocam,
+                                color: Colors.white,
                                 size: 20,
                               ),
                             ),
