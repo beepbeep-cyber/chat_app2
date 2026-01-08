@@ -33,12 +33,39 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
   String? _apiKey;
   static const String _apiKeyPrefKey = 'gemini_api_key';
   bool _isLoadingRemoteConfig = true;
+  
+  // Cooldown timer
+  int _cooldownSeconds = 0;
+  bool _isCooldown = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAI();
     _initTypingAnimation();
+    _startCooldownTimer();
+  }
+
+  /// Start periodic timer to update cooldown UI
+  void _startCooldownTimer() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return false;
+      
+      final globalCooldown = AIChatService.globalCooldownRemaining;
+      if (globalCooldown > 0) {
+        setState(() {
+          _cooldownSeconds = globalCooldown;
+          _isCooldown = true;
+        });
+      } else if (_isCooldown) {
+        setState(() {
+          _cooldownSeconds = 0;
+          _isCooldown = false;
+        });
+      }
+      return mounted; // Continue while widget is mounted
+    });
   }
 
   /// Initialize AI Service (Remote Config first, then local key)
@@ -266,21 +293,43 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
       );
     }
 
-    // If using Remote Config key, show success banner with rate limit status
-    if (AIChatService.isInitialized && AIChatService.isUsingRemoteConfig) {
+    // Show cooldown banner if in cooldown
+    if (_isCooldown && _cooldownSeconds > 0) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppTheme.success.withValues(alpha: 0.1), AppTheme.accent.withValues(alpha: 0.1)],
+            colors: [Colors.red[100]!, Colors.orange[100]!],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
         ),
         child: Row(
           children: [
-            Icon(Icons.cloud_done, color: AppTheme.success, size: 20),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    value: _cooldownSeconds / 70,
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red[400]!),
+                    backgroundColor: Colors.red[200],
+                  ),
+                ),
+                Text(
+                  '$_cooldownSeconds',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[700],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -288,20 +337,116 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Server API key - Ready!',
+                    'Server quá tải - Đang chờ...',
                     style: TextStyle(
-                      color: AppTheme.success,
+                      color: Colors.red[700],
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Tự động thử lại sau $_cooldownSeconds giây',
+                    style: TextStyle(
+                      color: Colors.red[600],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: _showSettingsDialog,
+              child: Text(
+                'Dùng key riêng',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // If using Remote Config key, show success banner with rate limit status
+    if (AIChatService.isInitialized && AIChatService.isUsingRemoteConfig) {
+      final status = AIChatService.detailedStatus;
+      final isReady = status['isReady'] as bool;
+      final availableKeys = status['availableKeys'] as int;
+      final totalKeys = status['totalKeys'] as int;
+      final remaining = status['remainingRequests'] as int;
+      
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isReady 
+                ? [AppTheme.success.withValues(alpha: 0.1), AppTheme.accent.withValues(alpha: 0.1)]
+                : [Colors.orange[100]!, Colors.amber[100]!],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isReady ? Icons.cloud_done : Icons.cloud_off,
+              color: isReady ? AppTheme.success : Colors.orange[700],
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isReady ? 'Server API - Sẵn sàng!' : 'Server đang bận',
+                    style: TextStyle(
+                      color: isReady ? AppTheme.success : Colors.orange[700],
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    '${AIChatService.rateLimitStatus}',
-                    style: TextStyle(
-                      color: AppTheme.gray600,
-                      fontSize: 11,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: (isReady ? AppTheme.success : Colors.orange).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '🖥 $availableKeys/$totalKeys',
+                          style: TextStyle(
+                            color: isReady ? AppTheme.success : Colors.orange[700],
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: (remaining > 3 ? AppTheme.success : Colors.orange).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '💬 $remaining/8',
+                          style: TextStyle(
+                            color: remaining > 3 ? AppTheme.success : Colors.orange[700],
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -691,6 +836,18 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
   void _sendMessage() async {
     final message = _message.text.trim();
     if (message.isEmpty || !AIChatService.isInitialized) return;
+    
+    // Check cooldown before sending
+    if (_isCooldown && _cooldownSeconds > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đang chờ server... còn $_cooldownSeconds giây'),
+          backgroundColor: Colors.orange[700],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _message.clear();
@@ -715,6 +872,14 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
 
     // Get AI response
     final response = await AIChatService.sendMessage(message);
+    
+    // Update cooldown if rate limited
+    if (response.isRateLimited && response.cooldownSeconds != null) {
+      setState(() {
+        _cooldownSeconds = response.cooldownSeconds!;
+        _isCooldown = true;
+      });
+    }
 
     // Save AI response to Firestore
     await _firestore

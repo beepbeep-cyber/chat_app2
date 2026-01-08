@@ -13,6 +13,7 @@ class RemoteConfigService {
 
   // Remote Config keys
   static const String _geminiApiKey = 'gemini_api_key';
+  static const String _geminiApiKeys = 'gemini_api_keys'; // Multiple keys support
   static const String _aiModelName = 'ai_model_name';
   static const String _aiEnabled = 'ai_enabled';
   static const String _aiWelcomeMessage = 'ai_welcome_message';
@@ -20,6 +21,7 @@ class RemoteConfigService {
   // Default values
   static const Map<String, dynamic> _defaults = {
     _geminiApiKey: '', // Empty by default, set in Firebase Console
+    _geminiApiKeys: '', // Multiple keys (comma-separated or JSON array)
     _aiModelName: 'gemini-2.0-flash',
     _aiEnabled: true,
     _aiWelcomeMessage: 'Hi! I\'m your AI Assistant. How can I help you today?',
@@ -76,10 +78,40 @@ class RemoteConfigService {
     }
   }
 
-  /// Get Gemini API Key
+  /// Get Gemini API Key (single key - fallback)
   String get geminiApiKey {
     if (!_isInitialized) return '';
     return _remoteConfig.getString(_geminiApiKey);
+  }
+
+  /// Get Multiple Gemini API Keys (comma-separated or JSON array)
+  /// Example: "key1,key2,key3" or "[\"key1\",\"key2\",\"key3\"]"
+  String get geminiApiKeys {
+    if (!_isInitialized) return '';
+    final keys = _remoteConfig.getString(_geminiApiKeys);
+    // If multiple keys not set, fallback to single key
+    if (keys.isEmpty) {
+      final singleKey = geminiApiKey;
+      return singleKey.isNotEmpty ? singleKey : '';
+    }
+    return keys;
+  }
+
+  /// Get number of configured API keys
+  int get apiKeysCount {
+    final keys = geminiApiKeys;
+    if (keys.isEmpty) return 0;
+    
+    // Try JSON array
+    if (keys.startsWith('[')) {
+      try {
+        final list = keys.split(',').where((k) => k.trim().isNotEmpty).toList();
+        return list.length;
+      } catch (_) {}
+    }
+    
+    // Comma-separated
+    return keys.split(',').where((k) => k.trim().isNotEmpty).length;
   }
 
   /// Get AI Model Name
