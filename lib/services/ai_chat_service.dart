@@ -105,37 +105,123 @@ class AIChatService {
     // Try to get multiple keys (comma-separated or JSON array)
     final keysString = remoteConfig.geminiApiKeys; // New field for multiple keys
     
-    debugPrint('🔍 Raw gemini_api_keys: "${keysString.length > 20 ? keysString.substring(0, 20) + '...' : keysString}"');
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('🔍 Loading API Keys from Remote Config');
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('📝 Raw gemini_api_keys:');
+    debugPrint('   Length: ${keysString.length}');
+    if (keysString.length > 0) {
+      debugPrint('   First 30 chars: "${keysString.length > 30 ? keysString.substring(0, 30) + '...' : keysString}"');
+      debugPrint('   Last 30 chars: "${keysString.length > 30 ? '...' + keysString.substring(keysString.length - 30) : keysString}"');
+    }
+    debugPrint('');
     
     if (keysString.isNotEmpty) {
       // Try JSON array first
+      debugPrint('🧪 Attempting JSON array parsing...');
       try {
         final List<dynamic> keysList = jsonDecode(keysString);
-        _apiKeys = keysList.map((k) => k.toString().trim()).where((k) => k.isNotEmpty).toList();
-        debugPrint('📋 Parsed as JSON array: ${_apiKeys.length} keys');
-      } catch (_) {
+        debugPrint('✅ Valid JSON array with ${keysList.length} elements');
+        
+        for (int i = 0; i < keysList.length; i++) {
+          final rawKey = keysList[i].toString();
+          // Clean the key thoroughly
+          final cleanKey = rawKey
+              .trim()
+              .replaceAll('"', '')
+              .replaceAll("'", '')
+              .replaceAll('\n', '')
+              .replaceAll('\r', '')
+              .replaceAll('\t', '');
+          
+          debugPrint('');
+          debugPrint('   Key $i:');
+          debugPrint('      Raw length: ${rawKey.length}');
+          debugPrint('      Clean length: ${cleanKey.length}');
+          debugPrint('      First 10 chars: "${cleanKey.length >= 10 ? cleanKey.substring(0, 10) : cleanKey}"');
+          debugPrint('      Starts with AIza: ${cleanKey.startsWith('AIza')}');
+          
+          if (cleanKey.isNotEmpty && cleanKey.startsWith('AIza')) {
+            _apiKeys.add(cleanKey);
+            debugPrint('      ✅ Added to list');
+          } else {
+            debugPrint('      ❌ Invalid format - skipped');
+          }
+        }
+        debugPrint('');
+        debugPrint('📋 Parsed ${_apiKeys.length} valid keys from JSON array');
+      } catch (e) {
+        debugPrint('❌ JSON parsing failed: $e');
+        debugPrint('');
+        
         // Fallback: comma-separated
-        _apiKeys = keysString.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
-        debugPrint('📋 Parsed as comma-separated: ${_apiKeys.length} keys');
+        debugPrint('🧪 Attempting comma-separated parsing...');
+        final parts = keysString.split(',');
+        debugPrint('   Found ${parts.length} parts');
+        
+        for (int i = 0; i < parts.length; i++) {
+          final rawKey = parts[i];
+          // Clean the key thoroughly
+          final cleanKey = rawKey
+              .trim()
+              .replaceAll('"', '')
+              .replaceAll("'", '')
+              .replaceAll('[', '')
+              .replaceAll(']', '')
+              .replaceAll('\n', '')
+              .replaceAll('\r', '')
+              .replaceAll('\t', '');
+          
+          debugPrint('');
+          debugPrint('   Part $i:');
+          debugPrint('      Raw length: ${rawKey.length}');
+          debugPrint('      Clean length: ${cleanKey.length}');
+          debugPrint('      First 10 chars: "${cleanKey.length >= 10 ? cleanKey.substring(0, 10) : cleanKey}"');
+          debugPrint('      Starts with AIza: ${cleanKey.startsWith('AIza')}');
+          
+          if (cleanKey.isNotEmpty && cleanKey.startsWith('AIza')) {
+            _apiKeys.add(cleanKey);
+            debugPrint('      ✅ Added to list');
+          } else {
+            debugPrint('      ❌ Invalid format - skipped');
+          }
+        }
+        debugPrint('');
+        debugPrint('📋 Parsed ${_apiKeys.length} valid keys from comma-separated');
       }
     }
     
     // Fallback to single key if no multiple keys
     if (_apiKeys.isEmpty) {
+      debugPrint('⚠️ No valid keys found in gemini_api_keys');
+      debugPrint('🔄 Trying fallback to single gemini_api_key...');
       final singleKey = remoteConfig.geminiApiKey;
       if (singleKey.isNotEmpty) {
-        _apiKeys = [singleKey];
-        debugPrint('📋 Fallback to single key');
+        final cleanKey = singleKey
+            .trim()
+            .replaceAll('"', '')
+            .replaceAll("'", '');
+        if (cleanKey.startsWith('AIza')) {
+          _apiKeys = [cleanKey];
+          debugPrint('✅ Fallback to single key successful');
+        } else {
+          debugPrint('❌ Single key also invalid');
+        }
+      } else {
+        debugPrint('❌ Single key is empty');
       }
     }
     
-    debugPrint('📡 TOTAL: ${_apiKeys.length} API keys loaded');
+    debugPrint('');
+    debugPrint('📡 FINAL RESULT: ${_apiKeys.length} valid API keys loaded');
     
-    // Log first few chars of each key for debugging
+    // Log first few chars of each key for verification
     for (int i = 0; i < _apiKeys.length; i++) {
       final key = _apiKeys[i];
-      debugPrint('  Key $i: ${key.substring(0, min(10, key.length))}...');
+      debugPrint('  ✓ Key $i: ${key.substring(0, min(10, key.length))}... (length: ${key.length})');
     }
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('');
   }
   
   /// Assign a random key index to user (truly random each session for better distribution)
@@ -415,12 +501,31 @@ class AIChatService {
   static Future<AIChatResponse> _sendRequest(String message) async {
     final apiKey = _activeApiKey;
     if (apiKey == null) {
+      debugPrint('❌ [AI Request] No API key available');
       return AIChatResponse(
         success: false,
         message: '⚠️ Không có API key.',
         error: 'NO_API_KEY',
       );
     }
+    
+    // Validate API key format
+    if (!apiKey.startsWith('AIza')) {
+      debugPrint('❌ [AI Request] Invalid API key format');
+      debugPrint('   Key preview: ${apiKey.substring(0, min(10, apiKey.length))}...');
+      debugPrint('   Key length: ${apiKey.length}');
+      return AIChatResponse(
+        success: false,
+        message: '🔑 API key không đúng định dạng.\n\nKey phải bắt đầu với "AIza"',
+        error: 'INVALID_API_KEY_FORMAT',
+      );
+    }
+    
+    debugPrint('🚀 [AI Request] Sending message...');
+    debugPrint('   Model: $_model');
+    debugPrint('   Key index: $_currentKeyIndex/${_apiKeys.length}');
+    debugPrint('   Key preview: ${apiKey.substring(0, min(10, apiKey.length))}...');
+    debugPrint('   Key length: ${apiKey.length}');
     
     try {
       // Add to history
@@ -484,6 +589,7 @@ class AIChatService {
         return AIChatResponse(success: true, message: aiMessage);
         
       } else if (response.statusCode == 429) {
+        debugPrint('⏰ [AI Response] Rate limited (429)');
         _removeLastUserMessage();
         return AIChatResponse(
           success: false,
@@ -492,23 +598,39 @@ class AIChatService {
         );
         
       } else {
+        debugPrint('❌ [AI Response] Error ${response.statusCode}');
+        debugPrint('   Response body: ${response.body}');
         _removeLastUserMessage();
-        final errorData = jsonDecode(response.body);
-        final errorMsg = errorData['error']?['message'] ?? 'Unknown error';
         
-        if (errorMsg.contains('API key')) {
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMsg = errorData['error']?['message'] ?? 'Unknown error';
+          final errorStatus = errorData['error']?['status'] ?? '';
+          
+          debugPrint('   Error message: $errorMsg');
+          debugPrint('   Error status: $errorStatus');
+          
+          if (errorMsg.contains('API key') || errorStatus.contains('INVALID')) {
+            return AIChatResponse(
+              success: false,
+              message: '🔑 API key không hợp lệ.\n\nChi tiết: $errorMsg',
+              error: 'INVALID_API_KEY',
+            );
+          }
+          
           return AIChatResponse(
             success: false,
-            message: '🔑 API key không hợp lệ.',
-            error: 'INVALID_API_KEY',
+            message: '❌ Lỗi: $errorMsg',
+            error: 'API_ERROR',
+          );
+        } catch (e) {
+          debugPrint('   Failed to parse error response: $e');
+          return AIChatResponse(
+            success: false,
+            message: '❌ Lỗi HTTP ${response.statusCode}',
+            error: 'API_ERROR',
           );
         }
-        
-        return AIChatResponse(
-          success: false,
-          message: '❌ Lỗi: $errorMsg',
-          error: 'API_ERROR',
-        );
       }
     } catch (e) {
       _removeLastUserMessage();
