@@ -266,7 +266,7 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
       );
     }
 
-    // If using Remote Config key, show success banner
+    // If using Remote Config key, show success banner with rate limit status
     if (AIChatService.isInitialized && AIChatService.isUsingRemoteConfig) {
       return Container(
         width: double.infinity,
@@ -283,13 +283,27 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
             Icon(Icons.cloud_done, color: AppTheme.success, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                'Using server API key - Ready to chat!',
-                style: TextStyle(
-                  color: AppTheme.success,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Server API key - Ready!',
+                    style: TextStyle(
+                      color: AppTheme.success,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${AIChatService.rateLimitStatus}',
+                    style: TextStyle(
+                      color: AppTheme.gray600,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
             ),
             TextButton(

@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,35 +9,45 @@ import 'remote_config_service.dart';
 /// AI Chat Service using Google Gemini API
 /// Hỗ trợ chat thông minh với AI, có memory và context
 /// Tự động lấy API key từ Firebase Remote Config
+/// ✅ FIXED: Client-side rate limiting để tránh server busy
 class AIChatService {
   // Google Gemini API configuration
   static String? _apiKey;
-  static String? _customApiKey; // User's custom API key (priority over Remote Config)
+  static String? _customApiKey;
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-  static String _model = 'gemini-2.0-flash'; // Can be updated from Remote Config
+  static String _model = 'gemini-2.0-flash';
   
   // Conversation history for context
   static final List<Map<String, String>> _conversationHistory = [];
-  static const int _maxHistoryLength = 20; // Keep last 20 messages for context
+  static const int _maxHistoryLength = 20;
   
+  // ========== CLIENT-SIDE RATE LIMITING ==========
+  // Gemini Free Tier: ~10-15 requests per minute
+  static final Queue<DateTime> _requestTimestamps = Queue<DateTime>();
+  static const int _maxRequestsPerMinute = 8; // Conservative limit (under 10)
+  static const Duration _rateLimitWindow = Duration(minutes: 1);
+  static DateTime? _lastRateLimitTime;
+  static const int _cooldownSeconds = 60; // Increased to 60 seconds
+  
+  // List of valid/supported Gemini models
+  static const List<String> _validModels = [
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro',
+    'gemini-1.5-pro-latest',
+    'gemini-pro',
+  ];
+  
+  static const String _defaultModel = 'gemini-2.0-flash';
+
   /// Initialize with API key (manual)
   static void initialize(String apiKey) {
     _customApiKey = apiKey;
     _apiKey = apiKey;
     debugPrint('✅ AIChatService: Initialized with custom API key');
   }
-  
-  // List of valid/supported Gemini models
-  static const List<String> _validModels = [
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-exp',
-    'gemini-1.5-pro',
-    'gemini-1.5-pro-latest',
-    'gemini-pro',
-  ];
-  
-  // Default fallback model (always use this if remote config model is invalid)
-  static const String _defaultModel = 'gemini-2.0-flash';
 
   /// Initialize from Remote Config (automatic)
   static Future<void> initializeFromRemoteConfig() async {
@@ -49,7 +60,7 @@ class AIChatService {
     // Priority 1: Check user's custom API key from Firestore
     await _loadUserApiKey();
     
-    // Priority 2: Get API key from Remote Config (if no custom key set)
+    // Priority 2: Get API key from Remote Config
     if (_customApiKey == null || _customApiKey!.isEmpty) {
       final remoteApiKey = remoteConfig.geminiApiKey;
       if (remoteApiKey.isNotEmpty) {
@@ -60,21 +71,12 @@ class AIChatService {
     
     // Get model name from Remote Config
     final modelName = remoteConfig.aiModelName;
-    if (modelName.isNotEmpty) {
-      // Validate model name - check if it's a valid/supported model
-      if (_validModels.contains(modelName)) {
-        _model = modelName;
-        debugPrint('📡 AIChatService: Using model from Remote Config: $_model');
-      } else {
-        // Model from Remote Config is invalid/deprecated, use default
-        _model = _defaultModel;
-        debugPrint('⚠️ AIChatService: Model "$modelName" from Remote Config is invalid/deprecated');
-        debugPrint('📡 AIChatService: Falling back to default model: $_model');
-      }
+    if (modelName.isNotEmpty && _validModels.contains(modelName)) {
+      _model = modelName;
+      debugPrint('📡 AIChatService: Using model: $_model');
     } else {
-      // No model in Remote Config, use default
       _model = _defaultModel;
-      debugPrint('📡 AIChatService: No model in Remote Config, using default: $_model');
+      debugPrint('📡 AIChatService: Using default model: $_model');
     }
   }
   
@@ -94,7 +96,7 @@ class AIChatService {
         if (apiKey != null && apiKey.isNotEmpty) {
           _customApiKey = apiKey;
           _apiKey = apiKey;
-          debugPrint('✅ AIChatService: Using user\'s custom API key from Firestore');
+          debugPrint('✅ AIChatService: Using user\'s custom API key');
         }
       }
     } catch (e) {
@@ -104,7 +106,6 @@ class AIChatService {
   
   /// Check if service is initialized
   static bool get isInitialized {
-    // Priority: custom key > remote config key
     if (_customApiKey != null && _customApiKey!.isNotEmpty) return true;
     if (_apiKey != null && _apiKey!.isNotEmpty) return true;
     return false;
@@ -116,22 +117,20 @@ class AIChatService {
            (_apiKey != null && _apiKey!.isNotEmpty);
   }
   
-  /// Set custom API key (user provided)
+  /// Set custom API key
   static void setApiKey(String apiKey) {
     _customApiKey = apiKey;
     _apiKey = apiKey;
   }
   
-  /// Clear custom API key (revert to Remote Config)
+  /// Clear custom API key
   static Future<void> clearCustomApiKey() async {
     _customApiKey = null;
     await initializeFromRemoteConfig();
   }
   
-  /// Get current API key (masked for security)
   static String? get apiKey => _customApiKey ?? _apiKey;
   
-  /// Get API key source
   static String get apiKeySource {
     if (_customApiKey != null && _customApiKey!.isNotEmpty) {
       return 'Custom (User provided)';
@@ -147,40 +146,99 @@ class AIChatService {
     debugPrint('🗑️ AIChatService: Conversation history cleared');
   }
   
-  // Rate limit handling - increased delays for Gemini API
-  static int _rateLimitRetryCount = 0;
-  static const int _maxRetries = 2; // Reduced retries, show message faster
-  static DateTime? _lastRateLimitTime;
-  static const int _rateLimitDelaySeconds = 15; // Increased from 5 to 15 seconds
+  // ========== RATE LIMIT HELPERS ==========
   
-  /// Send message to AI and get response with retry logic for rate limits
-  static Future<AIChatResponse> sendMessage(String message, {int retryCount = 0}) async {
+  /// Clean up old timestamps outside the rate limit window
+  static void _cleanupOldTimestamps() {
+    final now = DateTime.now();
+    while (_requestTimestamps.isNotEmpty &&
+        now.difference(_requestTimestamps.first) > _rateLimitWindow) {
+      _requestTimestamps.removeFirst();
+    }
+  }
+  
+  /// Check if we can make a request (client-side check)
+  static bool _canMakeRequest() {
+    _cleanupOldTimestamps();
+    return _requestTimestamps.length < _maxRequestsPerMinute;
+  }
+  
+  /// Get remaining requests in current window
+  static int get remainingRequests {
+    _cleanupOldTimestamps();
+    return _maxRequestsPerMinute - _requestTimestamps.length;
+  }
+  
+  /// Get wait time until next request is allowed
+  static Duration _getWaitTime() {
+    if (_requestTimestamps.isEmpty) return Duration.zero;
+    
+    _cleanupOldTimestamps();
+    
+    if (_requestTimestamps.length < _maxRequestsPerMinute) {
+      return Duration.zero;
+    }
+    
+    final oldestRequest = _requestTimestamps.first;
+    final waitUntil = oldestRequest.add(_rateLimitWindow);
+    final now = DateTime.now();
+    
+    if (waitUntil.isAfter(now)) {
+      return waitUntil.difference(now);
+    }
+    return Duration.zero;
+  }
+  
+  /// Check cooldown from server rate limit
+  static bool _isInCooldown() {
+    if (_lastRateLimitTime == null) return false;
+    
+    final elapsed = DateTime.now().difference(_lastRateLimitTime!).inSeconds;
+    return elapsed < _cooldownSeconds;
+  }
+  
+  static int _getCooldownRemaining() {
+    if (_lastRateLimitTime == null) return 0;
+    
+    final elapsed = DateTime.now().difference(_lastRateLimitTime!).inSeconds;
+    final remaining = _cooldownSeconds - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
+
+  /// Send message to AI with rate limiting
+  static Future<AIChatResponse> sendMessage(String message) async {
     if (!isInitialized) {
       return AIChatResponse(
         success: false,
-        message: 'AI Service not initialized. Please set your API key in Settings.',
+        message: '⚠️ AI Service chưa được cấu hình.\n\nVui lòng thiết lập API key trong Settings.',
         error: 'NO_API_KEY',
       );
     }
     
-    // Check if we need to wait due to previous rate limit (30 second cooldown)
-    if (_lastRateLimitTime != null) {
-      final cooldownSeconds = 30;
-      final elapsed = DateTime.now().difference(_lastRateLimitTime!).inSeconds;
-      if (elapsed < cooldownSeconds) {
-        final remaining = cooldownSeconds - elapsed;
-        return AIChatResponse(
-          success: false,
-          message: '⏳ Please wait $remaining seconds before trying again.\n\nThe server needs time to reset.',
-          error: 'RATE_LIMIT_WAIT',
-        );
-      } else {
-        // Cooldown finished, reset
-        _lastRateLimitTime = null;
-      }
+    // Check 1: Server cooldown (from previous 429 error)
+    if (_isInCooldown()) {
+      final remaining = _getCooldownRemaining();
+      return AIChatResponse(
+        success: false,
+        message: '⏳ Server đang nghỉ ngơi.\n\nVui lòng chờ $remaining giây nữa.\n\n💡 Mẹo: Gemini Free chỉ cho ~10 tin nhắn/phút.',
+        error: 'RATE_LIMIT_COOLDOWN',
+      );
+    }
+    
+    // Check 2: Client-side rate limit
+    if (!_canMakeRequest()) {
+      final waitTime = _getWaitTime();
+      return AIChatResponse(
+        success: false,
+        message: '⏳ Bạn đang gửi quá nhanh!\n\nChờ ${waitTime.inSeconds} giây nữa.\n\n📊 Còn $remainingRequests/$_maxRequestsPerMinute tin nhắn trong phút này.',
+        error: 'CLIENT_RATE_LIMIT',
+      );
     }
     
     try {
+      // Record this request timestamp
+      _requestTimestamps.add(DateTime.now());
+      
       // Add user message to history
       _conversationHistory.add({
         'role': 'user',
@@ -192,7 +250,7 @@ class AIChatService {
         _conversationHistory.removeRange(0, 2);
       }
       
-      // Build request body with conversation history
+      // Build request body
       final contents = _conversationHistory.map((msg) => {
         'role': msg['role'],
         'parts': [{'text': msg['parts']}],
@@ -207,22 +265,10 @@ class AIChatService {
           'maxOutputTokens': 1024,
         },
         'safetySettings': [
-          {
-            'category': 'HARM_CATEGORY_HARASSMENT',
-            'threshold': 'BLOCK_ONLY_HIGH',
-          },
-          {
-            'category': 'HARM_CATEGORY_HATE_SPEECH',
-            'threshold': 'BLOCK_ONLY_HIGH',
-          },
-          {
-            'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-            'threshold': 'BLOCK_ONLY_HIGH',
-          },
-          {
-            'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
-            'threshold': 'BLOCK_ONLY_HIGH',
-          },
+          {'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_ONLY_HIGH'},
+          {'category': 'HARM_CATEGORY_HATE_SPEECH', 'threshold': 'BLOCK_ONLY_HIGH'},
+          {'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold': 'BLOCK_ONLY_HIGH'},
+          {'category': 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold': 'BLOCK_ONLY_HIGH'},
         ],
       };
       
@@ -230,21 +276,17 @@ class AIChatService {
       
       final response = await http.post(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
-      );
+      ).timeout(const Duration(seconds: 30));
       
       if (response.statusCode == 200) {
-        // Reset rate limit tracking on success
-        _rateLimitRetryCount = 0;
+        // Success - clear any cooldown
         _lastRateLimitTime = null;
         
         final data = jsonDecode(response.body);
-        
-        // Extract response text
         String aiMessage = '';
+        
         if (data['candidates'] != null && data['candidates'].isNotEmpty) {
           final candidate = data['candidates'][0];
           if (candidate['content'] != null && 
@@ -255,18 +297,19 @@ class AIChatService {
         }
         
         if (aiMessage.isEmpty) {
-          // Check for safety block
           if (data['candidates']?[0]?['finishReason'] == 'SAFETY') {
+            _removeLastUserMessage();
             return AIChatResponse(
               success: false,
-              message: 'I cannot respond to that message due to safety guidelines.',
+              message: '🛡️ Tin nhắn bị chặn do chính sách an toàn.',
               error: 'SAFETY_BLOCK',
             );
           }
           
+          _removeLastUserMessage();
           return AIChatResponse(
             success: false,
-            message: 'I couldn\'t generate a response. Please try again.',
+            message: '❓ Không nhận được phản hồi. Thử lại nhé!',
             error: 'EMPTY_RESPONSE',
           );
         }
@@ -281,97 +324,103 @@ class AIChatService {
           success: true,
           message: aiMessage,
         );
+        
+      } else if (response.statusCode == 429) {
+        // Rate limit from server - set cooldown
+        _lastRateLimitTime = DateTime.now();
+        _removeLastUserMessage();
+        
+        return AIChatResponse(
+          success: false,
+          message: '🔴 Server quá tải (Rate Limit)\n\n'
+              '⏳ Vui lòng chờ $_cooldownSeconds giây.\n\n'
+              '💡 Gemini Free Tier chỉ cho phép ~10-15 requests/phút.\n\n'
+              '🔧 Giải pháp:\n'
+              '• Chờ 1 phút rồi thử lại\n'
+              '• Hoặc dùng API key riêng của bạn',
+          error: 'RATE_LIMIT',
+        );
+        
       } else {
-        // Handle API errors
+        // Other API errors
         final errorData = jsonDecode(response.body);
         String errorMessage = 'Unknown error';
         
         if (errorData['error'] != null) {
           errorMessage = errorData['error']['message'] ?? 'API Error';
           
-          // Check for specific errors
           if (errorMessage.contains('API key')) {
-            // Remove last user message since request failed
-            if (_conversationHistory.isNotEmpty && 
-                _conversationHistory.last['role'] == 'user') {
-              _conversationHistory.removeLast();
-            }
+            _removeLastUserMessage();
             return AIChatResponse(
               success: false,
-              message: 'Invalid API key. Please check your API key in Settings.',
+              message: '🔑 API key không hợp lệ.\n\nVui lòng kiểm tra lại trong Settings.',
               error: 'INVALID_API_KEY',
-            );
-          }
-          
-          // Handle rate limit with exponential backoff retry
-          if (response.statusCode == 429) {
-            _lastRateLimitTime = DateTime.now();
-            _rateLimitRetryCount++;
-            
-            // Remove last user message for retry
-            if (_conversationHistory.isNotEmpty && 
-                _conversationHistory.last['role'] == 'user') {
-              _conversationHistory.removeLast();
-            }
-            
-            // Don't auto-retry, let user know immediately
-            // Auto-retry causes confusion and long waits
-            return AIChatResponse(
-              success: false,
-              message: '⏳ Server is busy (rate limit). Please wait 30-60 seconds and try again.\n\n💡 To fix this permanently:\n1. Go to: https://aistudio.google.com/app/apikey\n2. Click "Create API Key"\n3. Copy the key\n4. Update in Firebase Remote Config → gemini_api_key',
-              error: 'RATE_LIMIT',
             );
           }
         }
         
         debugPrint('❌ AIChatService: API Error: ${response.statusCode} - $errorMessage');
-        
-        // Remove last user message since request failed
-        if (_conversationHistory.isNotEmpty && 
-            _conversationHistory.last['role'] == 'user') {
-          _conversationHistory.removeLast();
-        }
+        _removeLastUserMessage();
         
         return AIChatResponse(
           success: false,
-          message: 'Failed to get response: $errorMessage',
+          message: '❌ Lỗi: $errorMessage',
           error: 'API_ERROR',
         );
       }
     } catch (e) {
       debugPrint('❌ AIChatService: Error: $e');
+      _removeLastUserMessage();
       
-      // Remove last user message since request failed
-      if (_conversationHistory.isNotEmpty && 
-          _conversationHistory.last['role'] == 'user') {
-        _conversationHistory.removeLast();
+      if (e.toString().contains('TimeoutException')) {
+        return AIChatResponse(
+          success: false,
+          message: '⏱️ Timeout - Server phản hồi quá lâu.\n\nThử lại nhé!',
+          error: 'TIMEOUT',
+        );
       }
       
       return AIChatResponse(
         success: false,
-        message: 'Network error. Please check your internet connection.',
+        message: '📡 Lỗi mạng. Kiểm tra kết nối internet.',
         error: 'NETWORK_ERROR',
       );
     }
   }
   
-  /// Get suggested prompts for quick actions
+  /// Remove last user message from history (on error)
+  static void _removeLastUserMessage() {
+    if (_conversationHistory.isNotEmpty && 
+        _conversationHistory.last['role'] == 'user') {
+      _conversationHistory.removeLast();
+    }
+  }
+  
+  /// Get suggested prompts
   static List<String> getSuggestedPrompts() {
     return [
-      '💡 Give me a creative idea',
-      '📝 Help me write something',
-      '🧮 Solve a math problem',
-      '🌍 Tell me about a country',
-      '📚 Explain a concept',
-      '🎯 Give me advice',
-      '🎨 Describe an image idea',
-      '💻 Help with coding',
+      '💡 Cho tôi một ý tưởng hay',
+      '📝 Giúp tôi viết văn bản',
+      '🧮 Giải bài toán',
+      '🌍 Kể về một đất nước',
+      '📚 Giải thích khái niệm',
+      '🎯 Cho tôi lời khuyên',
+      '💻 Hỗ trợ lập trình',
+      '🇬🇧 Dịch sang tiếng Anh',
     ];
   }
   
   /// Get conversation history
   static List<Map<String, String>> get conversationHistory => 
       List.unmodifiable(_conversationHistory);
+      
+  /// Get rate limit status for UI display
+  static String get rateLimitStatus {
+    if (_isInCooldown()) {
+      return '🔴 Cooldown: ${_getCooldownRemaining()}s';
+    }
+    return '🟢 $remainingRequests/$_maxRequestsPerMinute';
+  }
 }
 
 /// Response model for AI Chat
