@@ -40,10 +40,10 @@ class RemoteConfigService {
       // Set default values
       await _remoteConfig.setDefaults(_defaults);
 
-      // Configure fetch settings
+      // Configure fetch settings - REDUCED cache time for faster updates
       await _remoteConfig.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: const Duration(hours: 1), // Cache for 1 hour
+        minimumFetchInterval: const Duration(minutes: 5), // Reduced from 1 hour to 5 minutes
       ));
 
       // Fetch and activate

@@ -1,6 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:math';
+import 'dart:math' show Random, min;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -67,6 +67,14 @@ class AIChatService {
       await remoteConfig.initialize();
     }
     
+    // FORCE refresh Remote Config to get latest keys
+    try {
+      await remoteConfig.refresh();
+      debugPrint('🔄 Remote Config refreshed');
+    } catch (e) {
+      debugPrint('⚠️ Remote Config refresh failed: $e');
+    }
+    
     // Priority 1: User's custom API key from Firestore
     await _loadUserApiKey();
     
@@ -97,14 +105,18 @@ class AIChatService {
     // Try to get multiple keys (comma-separated or JSON array)
     final keysString = remoteConfig.geminiApiKeys; // New field for multiple keys
     
+    debugPrint('🔍 Raw gemini_api_keys: "${keysString.length > 20 ? keysString.substring(0, 20) + '...' : keysString}"');
+    
     if (keysString.isNotEmpty) {
       // Try JSON array first
       try {
         final List<dynamic> keysList = jsonDecode(keysString);
         _apiKeys = keysList.map((k) => k.toString().trim()).where((k) => k.isNotEmpty).toList();
+        debugPrint('📋 Parsed as JSON array: ${_apiKeys.length} keys');
       } catch (_) {
         // Fallback: comma-separated
         _apiKeys = keysString.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
+        debugPrint('📋 Parsed as comma-separated: ${_apiKeys.length} keys');
       }
     }
     
@@ -113,35 +125,29 @@ class AIChatService {
       final singleKey = remoteConfig.geminiApiKey;
       if (singleKey.isNotEmpty) {
         _apiKeys = [singleKey];
+        debugPrint('📋 Fallback to single key');
       }
     }
     
-    debugPrint('📡 Loaded ${_apiKeys.length} API keys from Remote Config');
+    debugPrint('📡 TOTAL: ${_apiKeys.length} API keys loaded');
+    
+    // Log first few chars of each key for debugging
+    for (int i = 0; i < _apiKeys.length; i++) {
+      final key = _apiKeys[i];
+      debugPrint('  Key $i: ${key.substring(0, min(10, key.length))}...');
+    }
   }
   
-  /// Assign a consistent key index to user (based on user ID hash)
+  /// Assign a random key index to user (truly random each session for better distribution)
   static Future<void> _assignKeyToUser() async {
     if (_apiKeys.isEmpty) return;
     
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedIndex = prefs.getInt('ai_key_index');
+      // ALWAYS assign random key each session for better load distribution
+      // Don't use saved index - it causes all users to pile up on same keys
+      _currentKeyIndex = Random().nextInt(_apiKeys.length);
       
-      if (savedIndex != null && savedIndex < _apiKeys.length) {
-        _currentKeyIndex = savedIndex;
-      } else {
-        // Assign random key to distribute load
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          // Use user ID hash for consistent assignment
-          _currentKeyIndex = user.uid.hashCode.abs() % _apiKeys.length;
-        } else {
-          _currentKeyIndex = Random().nextInt(_apiKeys.length);
-        }
-        await prefs.setInt('ai_key_index', _currentKeyIndex);
-      }
-      
-      debugPrint('🔑 User assigned to key index: $_currentKeyIndex');
+      debugPrint('🔑 User assigned to key index: $_currentKeyIndex (total: ${_apiKeys.length})');
     } catch (e) {
       _currentKeyIndex = 0;
     }
