@@ -54,6 +54,10 @@ class _CreateGroupState extends State<CreateGroup> {
     await _firestore.collection('groups').doc(groupId).set({
       "members": widget.memberList,
       "id": groupId,
+      "name": groupName,
+      "avatar": "https://firebasestorage.googleapis.com/v0/b/chatapptest2-93793.appspot.com/o/group_avatars%2Fdefault_group.png?alt=media&token=default",
+      "createdAt": DateTime.now(),
+      "createdBy": widget.user.uid,
     });
 
     for (int i = 0; i < widget.memberList.length; i++) {

@@ -4,11 +4,14 @@ import 'package:my_porject/widgets/page_transitions.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:my_porject/screens/chathome_screen.dart';
 import 'package:my_porject/screens/group/add_members_group.dart';
+import 'dart:io';
 
 import '../../resources/methods.dart';
 
@@ -38,6 +41,8 @@ class _GroupInfoState extends State<GroupInfo> {
 
   List membersList = [];
   bool isLoading = true;
+  String groupAvatar = "https://firebasestorage.googleapis.com/v0/b/chatapptest2-93793.appspot.com/o/images%2F2a2c7410-7b06-11ed-aa52-c50d48cba6ef.jpg?alt=media&token=1b11fc5a-2294-4db8-94bf-7bd083f54b98";
+  File? _imageFile;
 
   @override
   void initState() {
@@ -65,6 +70,7 @@ class _GroupInfoState extends State<GroupInfo> {
         .then((value) {
       setState(() {
         membersList = value['members'];
+        groupAvatar = value['avatar'] ?? groupAvatar;
         isLoading = false;
       });
     });
@@ -563,6 +569,335 @@ class _GroupInfoState extends State<GroupInfo> {
     return '${minutes ~/ 1440} day${minutes >= 2880 ? "s" : ""}';
   }
 
+  // Upload group avatar
+  Future<void> _uploadGroupAvatar() async {
+    if (!checkAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only admins can change group avatar'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+      return;
+    }
+
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      setState(() {
+        isLoading = true;
+      });
+
+      try {
+        _imageFile = File(image.path);
+        
+        // Upload to Firebase Storage
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('group_avatars')
+            .child('${widget.groupId}.jpg');
+        
+        await storageRef.putFile(_imageFile!);
+        final downloadUrl = await storageRef.getDownloadURL();
+
+        // Update Firestore
+        await _firestore.collection('groups').doc(widget.groupId).update({
+          'avatar': downloadUrl,
+        });
+
+        // Update all members' chat history
+        for (var member in membersList) {
+          await _firestore
+              .collection('users')
+              .doc(member['uid'])
+              .collection('chatHistory')
+              .doc(widget.groupId)
+              .update({'avatar': downloadUrl});
+        }
+
+        setState(() {
+          groupAvatar = downloadUrl;
+          isLoading = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Group avatar updated successfully!'),
+              backgroundColor: AppTheme.success,
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() {
+          isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating avatar: $e'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // Change group name
+  Future<void> _changeGroupName() async {
+    if (!checkAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only admins can change group name'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+      return;
+    }
+
+    final TextEditingController nameController = TextEditingController(text: widget.groupName);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.edit_outlined, color: AppTheme.accent, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('Change Group Name', style: TextStyle(fontSize: 18)),
+          ],
+        ),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            hintText: 'Enter new group name',
+            filled: true,
+            fillColor: AppTheme.gray50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppTheme.gray300!),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.gray600)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Group name cannot be empty')),
+                );
+                return;
+              }
+
+              Navigator.pop(context);
+              setState(() {
+                isLoading = true;
+              });
+
+              try {
+                // Update group name in groups collection
+                await _firestore.collection('groups').doc(widget.groupId).update({
+                  'name': nameController.text.trim(),
+                });
+
+                // Update all members' groups and chatHistory
+                for (var member in membersList) {
+                  await _firestore
+                      .collection('users')
+                      .doc(member['uid'])
+                      .collection('groups')
+                      .doc(widget.groupId)
+                      .update({'name': nameController.text.trim()});
+
+                  await _firestore
+                      .collection('users')
+                      .doc(member['uid'])
+                      .collection('chatHistory')
+                      .doc(widget.groupId)
+                      .update({'name': nameController.text.trim()});
+                }
+
+                // Add notification message
+                await _firestore
+                    .collection('groups')
+                    .doc(widget.groupId)
+                    .collection('chats')
+                    .add({
+                  'message': '${widget.user.displayName} changed group name to \"${nameController.text.trim()}\"',
+                  'type': 'notify',
+                  'time': timeForMessage(DateTime.now().toString()),
+                  'timeStamp': DateTime.now(),
+                });
+
+                setState(() {
+                  isLoading = false;
+                });
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Group name updated successfully!'),
+                      backgroundColor: AppTheme.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                setState(() {
+                  isLoading = false;
+                });
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppTheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Make member admin
+  Future<void> _makeAdmin(int index) async {
+    if (!checkAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only admins can assign admin roles'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.admin_panel_settings, color: AppTheme.accent, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Make Admin?', style: TextStyle(fontSize: 18))),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to make ${membersList[index]['name']} an admin?',
+          style: TextStyle(fontSize: 14, color: AppTheme.gray700),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.gray600)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() {
+                isLoading = true;
+              });
+
+              try {
+                // Update member's admin status
+                membersList[index]['isAdmin'] = true;
+
+                // Update in Firestore
+                await _firestore.collection('groups').doc(widget.groupId).update({
+                  'members': membersList,
+                });
+
+                // Add notification
+                await _firestore
+                    .collection('groups')
+                    .doc(widget.groupId)
+                    .collection('chats')
+                    .add({
+                  'message': '${widget.user.displayName} made ${membersList[index]['name']} an admin',
+                  'type': 'notify',
+                  'time': timeForMessage(DateTime.now().toString()),
+                  'timeStamp': DateTime.now(),
+                });
+
+                setState(() {
+                  isLoading = false;
+                });
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${membersList[index]['name']} is now an admin!'),
+                      backgroundColor: AppTheme.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                setState(() {
+                  isLoading = false;
+                });
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppTheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Make Admin'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void onLeaveGroup() async {
     if (!checkAdmin()) {
       setState(() {
@@ -701,36 +1036,78 @@ class _GroupInfoState extends State<GroupInfo> {
                     ),
                     child: Column(
                       children: [
-                        // Group Avatar
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppTheme.gray300!, width: 2),
-                          ),
-                          child: const CircleAvatar(
-                            backgroundImage: CachedNetworkImageProvider(
-                              "https://firebasestorage.googleapis.com/v0/b/chatapptest2-93793.appspot.com/o/images%2F2a2c7410-7b06-11ed-aa52-c50d48cba6ef.jpg?alt=media&token=1b11fc5a-2294-4db8-94bf-7bd083f54b98",
+                        // Group Avatar with edit button
+                        Stack(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppTheme.gray300!, width: 2),
+                              ),
+                              child: CircleAvatar(
+                                backgroundImage: CachedNetworkImageProvider(groupAvatar),
+                                radius: 38,
+                              ),
                             ),
-                            radius: 38,
-                          ),
+                            if (checkAdmin())
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: _uploadGroupAvatar,
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accent,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 16),
-                        // Group Name
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            widget.groupName,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primaryDark,
+                        // Group Name with edit button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  widget.groupName,
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.primaryDark,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
+                            if (checkAdmin())
+                              IconButton(
+                                onPressed: _changeGroupName,
+                                icon: Icon(
+                                  Icons.edit_outlined,
+                                  color: AppTheme.gray600,
+                                  size: 20,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         // Member Count
@@ -968,7 +1345,73 @@ class _GroupInfoState extends State<GroupInfo> {
                               onTap: () {
                                 if (widget.isDeviceConnected == false) {
                                   showDialogInternetCheck();
-                                } else if (checkAdmin() && !isCurrentUser) {
+                                } else if (checkAdmin() && !isCurrentUser && !isAdmin) {
+                                  // Show options: Make Admin or Remove
+                                  showModalBottomSheet(
+                                    context: context,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) => Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Drag handle
+                                          Container(
+                                            width: 40,
+                                            height: 4,
+                                            margin: const EdgeInsets.only(bottom: 20),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.gray300,
+                                              borderRadius: BorderRadius.circular(2),
+                                            ),
+                                          ),
+                                          // Make Admin
+                                          ListTile(
+                                            leading: Container(
+                                              width: 44,
+                                              height: 44,
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.accent.withValues(alpha: 0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Icon(Icons.admin_panel_settings, color: AppTheme.accent, size: 22),
+                                            ),
+                                            title: Text('Make Admin', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                                            subtitle: Text('Grant admin privileges', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _makeAdmin(index);
+                                            },
+                                          ),
+                                          const SizedBox(height: 8),
+                                          // Remove Member
+                                          ListTile(
+                                            leading: Container(
+                                              width: 44,
+                                              height: 44,
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.error.withValues(alpha: 0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Icon(Icons.person_remove_outlined, color: AppTheme.error, size: 22),
+                                            ),
+                                            title: Text('Remove Member', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.error)),
+                                            subtitle: Text('Remove from group', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              showRemoveDialog(index);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                } else if (checkAdmin() && !isCurrentUser && isAdmin) {
+                                  // Admin can only remove other admins
                                   showRemoveDialog(index);
                                 }
                               },
