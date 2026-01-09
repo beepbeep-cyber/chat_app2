@@ -604,6 +604,105 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     }
   }
 
+  // Status Banner like AI Chatbot
+  Widget _buildStatusBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppTheme.gray200!, width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Status indicator circle
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: widget.isDeviceConnected ? AppTheme.success : AppTheme.error,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Status text
+          Expanded(
+            child: Text(
+              widget.isDeviceConnected 
+                ? 'Connected • End-to-End Encrypted'
+                : 'No Connection',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: widget.isDeviceConnected ? AppTheme.gray700 : AppTheme.error,
+              ),
+            ),
+          ),
+          // Encryption icon
+          if (widget.isDeviceConnected)
+            Icon(
+              Icons.lock_outline,
+              size: 14,
+              color: AppTheme.success,
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Voice recording bottom sheet
+  void _showVoiceRecording() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppTheme.gray300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Voice recording UI
+            Icon(Icons.mic, size: 80, color: AppTheme.accent),
+            const SizedBox(height: 20),
+            Text(
+              'Hold to record',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primaryDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Release to send',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.gray600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -611,12 +710,12 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: AppTheme.backgroundLight,
+        backgroundColor: AppTheme.gray50,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: AppTheme.primaryDark,
-          elevation: 2,
-          shadowColor: Colors.black.withValues(alpha: 0.3),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.black.withValues(alpha: 0.1),
           flexibleSpace: SafeArea(
             child: Container(
               padding: const EdgeInsets.only(right: 10),
@@ -629,18 +728,29 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                           SlideRightRoute(
                               page: HomeScreen(user: widget.user)));
                     },
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: AppTheme.textWhite,
-                      size: 22,
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: AppTheme.gray800,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(width: 2),
-                  // Use GroupAvatar for consistent styling
-                  GroupAvatar(
-                    groupName: widget.groupName,
-                    size: 40,
-                    memberCount: memberList.length,
+                  const SizedBox(width: 4),
+                  // Gradient icon container like AI Chatbot
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppTheme.primaryDark, AppTheme.accent],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.group,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -650,8 +760,9 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       children: [
                         Text(
                           widget.groupName,
-                          style: AppTheme.titleMedium.copyWith(
-                            color: AppTheme.textWhite,
+                          style: TextStyle(
+                            color: AppTheme.primaryDark,
+                            fontSize: 17,
                             fontWeight: FontWeight.w600,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -663,17 +774,19 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                             Container(
                               width: 8,
                               height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppTheme.online,
+                              decoration: BoxDecoration(
+                                color: widget.isDeviceConnected ? AppTheme.success : AppTheme.error,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${memberList.length} members',
-                              style: const TextStyle(
-                                color: AppTheme.textHint,
-                                fontSize: 13,
+                              widget.isDeviceConnected 
+                                  ? '${memberList.length} members • Online'
+                                  : '${memberList.length} members • Offline',
+                              style: TextStyle(
+                                color: AppTheme.gray500,
+                                fontSize: 12,
                               ),
                             ),
                           ],
@@ -681,51 +794,56 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: AppTheme.gray700),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'info') {
+                        Navigator.push(
                           context,
                           SlideRightRoute(
-                              page: GroupInfo(
-                                    groupName: widget.groupName,
-                                    groupId: widget.groupChatId,
-                                    user: widget.user,
-                                    memberListt: memberList,
-                                    isDeviceConnected: widget.isDeviceConnected,
-                                  )));
+                            page: GroupInfo(
+                              groupName: widget.groupName,
+                              groupId: widget.groupChatId,
+                              user: widget.user,
+                              memberListt: memberList,
+                              isDeviceConnected: widget.isDeviceConnected,
+                            ),
+                          ),
+                        );
+                      }
                     },
-                    icon: const Icon(
-                      Icons.settings_outlined,
-                      color: AppTheme.textWhite,
-                      size: 26,
-                    ),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'info',
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 20, color: AppTheme.gray700),
+                            SizedBox(width: 12),
+                            Text('Group Info'),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
         ),
-        body: RefreshIndicator(
-          onRefresh: () {
-            return abc();
-          },
-          child: Column(
-            children: <Widget>[
-              widget.isDeviceConnected == false
-                  ? Container(
-                      alignment: Alignment.center,
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height / 30,
-                      // color: Colors.red,
-                      child: const Text(
-                        'No Internet Connection',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    )
-                  : Container(),
+        body: Column(
+          children: [
+            // Status Banner like AI Chatbot
+            _buildStatusBanner(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () {
+                  return abc();
+                },
+                child: Column(
+                  children: <Widget>[
               Expanded(
                 child: Container(
                     color: Colors.transparent,
