@@ -2,283 +2,313 @@
  * Firebase Cloud Functions for Chat App
  * 
  * Features:
- * 1. Auto-delete messages (runs every 5 minutes)
- * 2. Send push notifications
- * 
- * Deploy: firebase deploy --only functions
+ * - Send FCM notifications when new notification document created
+ * - Retry mechanism for failed sends
+ * - Track delivery status
  */
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
+// Initialize Firebase Admin
 admin.initializeApp();
 
-const db = admin.firestore();
-
 /**
- * Scheduled function to auto-delete old messages
- * Runs every 5 minutes
+ * Send FCM notification when a new notification document is created
+ * 
+ * Trigger: Firestore onCreate for /notifications/{notificationId}
+ * 
+ * Document structure:
+ * {
+ *   token: string,              // FCM token of receiver
+ *   title: string,              // Notification title
+ *   body: string,               // Notification body
+ *   data: object,               // Custom data payload
+ *   receiverId: string,         // User ID of receiver
+ *   senderId: string,           // User ID of sender
+ *   createdAt: timestamp,       // When notification was created
+ *   sent: boolean,              // Has been sent?
+ *   sentAt: timestamp,          // When it was sent
+ *   error: string,              // Error message if failed
+ * }
  */
-exports.autoDeleteMessages = functions.pubsub
-  .schedule('every 5 minutes')
-  .onRun(async (context) => {
-    console.log('🗑️ [AutoDelete] Starting scheduled cleanup...');
-    
-    try {
-      // Get all chatrooms with auto-delete enabled
-      const chatroomsSnapshot = await db.collection('chatroom')
-        .where('autoDeleteEnabled', '==', true)
-        .get();
-      
-      if (chatroomsSnapshot.empty) {
-        console.log('🗑️ [AutoDelete] No chatrooms with auto-delete enabled');
-        return null;
-      }
-      
-      console.log(`🗑️ [AutoDelete] Found ${chatroomsSnapshot.size} chatrooms to process`);
-      
-      let totalDeleted = 0;
-      
-      for (const chatroomDoc of chatroomsSnapshot.docs) {
-        const chatRoomId = chatroomDoc.id;
-        const data = chatroomDoc.data();
-        const durationMinutes = data.autoDeleteDuration || 0;
-        
-        if (durationMinutes <= 0) {
-          console.log(`🗑️ [AutoDelete] Skipping ${chatRoomId} - invalid duration`);
-          continue;
-        }
-        
-        console.log(`🗑️ [AutoDelete] Processing ${chatRoomId} - duration: ${durationMinutes} minutes`);
-        
-        // Calculate cutoff time
-        const cutoffTime = new Date(Date.now() - durationMinutes * 60 * 1000);
-        
-        // Query old messages
-        const oldMessagesSnapshot = await db.collection('chatroom')
-          .doc(chatRoomId)
-          .collection('chats')
-          .where('timeStamp', '<', cutoffTime)
-          .get();
-        
-        if (oldMessagesSnapshot.empty) {
-          console.log(`🗑️ [AutoDelete] No old messages in ${chatRoomId}`);
-          continue;
-        }
-        
-        console.log(`🗑️ [AutoDelete] Found ${oldMessagesSnapshot.size} messages to delete in ${chatRoomId}`);
-        
-        // Batch delete
-        const batch = db.batch();
-        let deleteCount = 0;
-        
-        for (const messageDoc of oldMessagesSnapshot.docs) {
-          batch.delete(messageDoc.ref);
-          deleteCount++;
-          
-          // Commit every 450 documents (Firestore limit is 500)
-          if (deleteCount >= 450) {
-            await batch.commit();
-            console.log(`🗑️ [AutoDelete] Committed batch of ${deleteCount} deletes`);
-            totalDeleted += deleteCount;
-            deleteCount = 0;
-          }
-        }
-        
-        // Commit remaining
-        if (deleteCount > 0) {
-          await batch.commit();
-          totalDeleted += deleteCount;
-          console.log(`🗑️ [AutoDelete] Committed final batch of ${deleteCount} deletes`);
-        }
-        
-        // Update last message in chatroom
-        await updateLastMessage(chatRoomId);
-      }
-      
-      console.log(`✅ [AutoDelete] Cleanup complete. Total deleted: ${totalDeleted} messages`);
-      return null;
-      
-    } catch (error) {
-      console.error('❌ [AutoDelete] Error:', error);
-      return null;
-    }
-  });
-
-/**
- * Update last message in chatroom after deletion
- */
-async function updateLastMessage(chatRoomId) {
-  try {
-    const latestMessages = await db.collection('chatroom')
-      .doc(chatRoomId)
-      .collection('chats')
-      .orderBy('timeStamp', 'desc')
-      .limit(1)
-      .get();
-    
-    if (!latestMessages.empty) {
-      const latestMessage = latestMessages.docs[0].data();
-      await db.collection('chatroom').doc(chatRoomId).update({
-        lastMessage: latestMessage.message || '',
-        type: latestMessage.type || 'text',
-      });
-    } else {
-      await db.collection('chatroom').doc(chatRoomId).update({
-        lastMessage: '',
-        type: 'text',
-      });
-    }
-  } catch (error) {
-    console.error(`❌ [AutoDelete] Error updating last message for ${chatRoomId}:`, error);
-  }
-}
-
-/**
- * Send push notification when new message is received
- * Triggered when a new document is created in chats subcollection
- */
-exports.sendChatNotification = functions.firestore
-  .document('chatroom/{chatRoomId}/chats/{messageId}')
+exports.sendNotification = functions.firestore
+  .document('notifications/{notificationId}')
   .onCreate(async (snap, context) => {
-    const messageData = snap.data();
-    const chatRoomId = context.params.chatRoomId;
-    
-    console.log(`🔔 [Notification] New message in ${chatRoomId}`);
-    
     try {
-      // Get chatroom info to find recipient
-      const chatroomDoc = await db.collection('chatroom').doc(chatRoomId).get();
-      
-      if (!chatroomDoc.exists) {
-        console.log('🔔 [Notification] Chatroom not found');
+      const data = snap.data();
+      const notificationId = context.params.notificationId;
+
+      console.log(`📨 [FCM] Processing notification ${notificationId}`);
+      console.log(`📨 [FCM] Receiver: ${data.receiverId}`);
+      console.log(`📨 [FCM] Sender: ${data.senderId}`);
+
+      // Skip if already sent
+      if (data.sent) {
+        console.log(`⏭️ [FCM] Already sent, skipping`);
         return null;
       }
-      
-      const chatroomData = chatroomDoc.data();
-      const senderName = messageData.sendBy;
-      
-      // Determine recipient (the user who is NOT the sender)
-      // This requires knowing user UIDs in the chatroom
-      // For now, we'll use a simpler approach with chatHistory
-      
-      // Get sender UID
-      const senderUid = messageData.senderUid;
-      if (!senderUid) {
-        console.log('🔔 [Notification] No sender UID');
+
+      // Validate required fields
+      if (!data.token || !data.title || !data.body) {
+        console.error(`❌ [FCM] Missing required fields`);
+        await snap.ref.update({
+          error: 'Missing required fields: token, title, or body',
+          sent: false,
+        });
         return null;
       }
-      
-      // Find users in this chatroom from chatHistory
-      // The chatRoomId format is usually a combination of user UIDs
-      const users = chatRoomId.split('_');
-      const recipientUid = users.find(uid => uid !== senderUid);
-      
-      if (!recipientUid) {
-        console.log('🔔 [Notification] Could not determine recipient');
-        return null;
-      }
-      
-      // Get recipient's FCM token
-      const recipientDoc = await db.collection('users').doc(recipientUid).get();
-      
-      if (!recipientDoc.exists) {
-        console.log('🔔 [Notification] Recipient not found');
-        return null;
-      }
-      
-      const recipientData = recipientDoc.data();
-      const fcmToken = recipientData.fcmToken;
-      
-      if (!fcmToken) {
-        console.log('🔔 [Notification] Recipient has no FCM token');
-        return null;
-      }
-      
-      // Prepare notification message
-      let messageBody = 'New message';
-      
-      if (messageData.encrypted) {
-        messageBody = '🔒 Encrypted message';
-      } else if (messageData.type === 'text') {
-        messageBody = messageData.message || 'New message';
-      } else if (messageData.type === 'img') {
-        messageBody = '📷 Image';
-      } else if (messageData.type === 'voice') {
-        messageBody = '🎤 Voice message';
-      } else if (messageData.type === 'file') {
-        messageBody = '📎 File';
-      } else if (messageData.type === 'location') {
-        messageBody = '📍 Location';
-      }
-      
-      // Send notification
-      const notification = {
-        token: fcmToken,
+
+      // Build FCM message
+      const message = {
+        token: data.token,
         notification: {
-          title: senderName || 'New Message',
-          body: messageBody,
+          title: data.title,
+          body: data.body,
         },
         data: {
-          type: 'chat',
-          chatId: chatRoomId,
-          senderId: senderUid,
+          ...data.data,
+          notificationId: notificationId,
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
         },
         android: {
-          priority: 'high',
+          priority: data.priority === 'high' ? 'high' : 'normal',
           notification: {
             channelId: 'high_importance_channel',
-            priority: 'high',
-            defaultSound: true,
+            priority: data.priority === 'high' ? 'high' : 'default',
+            sound: 'default',
             defaultVibrateTimings: true,
           },
         },
         apns: {
           payload: {
             aps: {
-              badge: 1,
               sound: 'default',
+              badge: 1,
             },
           },
         },
       };
-      
-      await admin.messaging().send(notification);
-      console.log(`✅ [Notification] Sent to ${recipientUid}`);
-      
-      return null;
-      
+
+      console.log(`📤 [FCM] Sending notification...`);
+
+      // Send notification via FCM
+      const response = await admin.messaging().send(message);
+
+      console.log(`✅ [FCM] Sent successfully: ${response}`);
+
+      // Update document to mark as sent
+      await snap.ref.update({
+        sent: true,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        messageId: response,
+      });
+
+      return { success: true, messageId: response };
+
     } catch (error) {
-      console.error('❌ [Notification] Error:', error);
+      console.error(`❌ [FCM] Error sending notification:`, error);
+
+      // Check error type
+      let errorMessage = error.message || 'Unknown error';
+      let shouldRetry = false;
+
+      if (error.code === 'messaging/invalid-registration-token' ||
+          error.code === 'messaging/registration-token-not-registered') {
+        errorMessage = 'Invalid or expired FCM token';
+        console.log(`🔑 [FCM] Token invalid, should remove from user`);
+        
+        // Optionally: Remove invalid token from user document
+        const data = snap.data();
+        if (data.receiverId) {
+          try {
+            await admin.firestore()
+              .collection('users')
+              .doc(data.receiverId)
+              .update({
+                fcmToken: admin.firestore.FieldValue.delete(),
+              });
+            console.log(`🗑️ [FCM] Removed invalid token from user ${data.receiverId}`);
+          } catch (e) {
+            console.error(`❌ [FCM] Failed to remove token:`, e);
+          }
+        }
+      } else if (error.code === 'messaging/message-rate-exceeded') {
+        errorMessage = 'FCM rate limit exceeded';
+        shouldRetry = true;
+      } else if (error.code === 'messaging/internal-error') {
+        errorMessage = 'FCM internal error';
+        shouldRetry = true;
+      }
+
+      // Update document with error
+      await snap.ref.update({
+        error: errorMessage,
+        errorCode: error.code || 'unknown',
+        sent: false,
+        shouldRetry: shouldRetry,
+        lastAttemptAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Don't throw error - let it fail gracefully
+      return { success: false, error: errorMessage };
+    }
+  });
+
+/**
+ * Retry failed notifications (scheduled function)
+ * 
+ * Runs every 5 minutes to retry failed notifications
+ */
+exports.retryFailedNotifications = functions.pubsub
+  .schedule('every 5 minutes')
+  .onRun(async (context) => {
+    console.log(`🔄 [FCM] Checking for failed notifications to retry...`);
+
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+      // Find notifications that failed and should be retried
+      const failedNotifications = await admin.firestore()
+        .collection('notifications')
+        .where('sent', '==', false)
+        .where('shouldRetry', '==', true)
+        .where('lastAttemptAt', '<', fiveMinutesAgo)
+        .limit(100)
+        .get();
+
+      if (failedNotifications.empty) {
+        console.log(`✅ [FCM] No failed notifications to retry`);
+        return null;
+      }
+
+      console.log(`🔄 [FCM] Found ${failedNotifications.size} notifications to retry`);
+
+      const promises = failedNotifications.docs.map(async (doc) => {
+        const data = doc.data();
+        
+        const message = {
+          token: data.token,
+          notification: {
+            title: data.title,
+            body: data.body,
+          },
+          data: data.data || {},
+        };
+
+        try {
+          const response = await admin.messaging().send(message);
+          
+          await doc.ref.update({
+            sent: true,
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            messageId: response,
+            error: admin.firestore.FieldValue.delete(),
+            shouldRetry: false,
+          });
+
+          console.log(`✅ [FCM] Retry successful: ${doc.id}`);
+        } catch (error) {
+          console.error(`❌ [FCM] Retry failed: ${doc.id}`, error.message);
+          
+          await doc.ref.update({
+            lastAttemptAt: admin.firestore.FieldValue.serverTimestamp(),
+            retryCount: admin.firestore.FieldValue.increment(1),
+          });
+        }
+      });
+
+      await Promise.all(promises);
+      console.log(`🔄 [FCM] Retry batch complete`);
+
+      return null;
+    } catch (error) {
+      console.error(`❌ [FCM] Retry function error:`, error);
       return null;
     }
   });
 
 /**
- * Clean up user data when account is deleted
+ * Clean up old notifications (scheduled function)
+ * 
+ * Runs daily to delete notifications older than 30 days
  */
-exports.cleanupUserData = functions.auth.user().onDelete(async (user) => {
-  console.log(`🗑️ [Cleanup] User deleted: ${user.uid}`);
-  
+exports.cleanupOldNotifications = functions.pubsub
+  .schedule('every 24 hours')
+  .onRun(async (context) => {
+    console.log(`🧹 [FCM] Cleaning up old notifications...`);
+
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      const oldNotifications = await admin.firestore()
+        .collection('notifications')
+        .where('createdAt', '<', thirtyDaysAgo)
+        .limit(500)
+        .get();
+
+      if (oldNotifications.empty) {
+        console.log(`✅ [FCM] No old notifications to clean up`);
+        return null;
+      }
+
+      console.log(`🧹 [FCM] Deleting ${oldNotifications.size} old notifications`);
+
+      const batch = admin.firestore().batch();
+      oldNotifications.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      console.log(`✅ [FCM] Cleanup complete`);
+
+      return null;
+    } catch (error) {
+      console.error(`❌ [FCM] Cleanup error:`, error);
+      return null;
+    }
+  });
+
+/**
+ * Send notification to topic
+ * 
+ * Callable function for sending notifications to FCM topics
+ */
+exports.sendTopicNotification = functions.https.onCall(async (data, context) => {
+  // Check authentication
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'User must be authenticated'
+    );
+  }
+
+  const { topic, title, body, customData } = data;
+
+  if (!topic || !title || !body) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Missing required fields: topic, title, body'
+    );
+  }
+
   try {
-    // Delete user document
-    await db.collection('users').doc(user.uid).delete();
-    
-    // Delete user's chat history
-    const chatHistorySnapshot = await db.collection('users')
-      .doc(user.uid)
-      .collection('chatHistory')
-      .get();
-    
-    const batch = db.batch();
-    chatHistorySnapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-    
-    console.log(`✅ [Cleanup] User data cleaned up for ${user.uid}`);
-    
+    const message = {
+      topic: topic,
+      notification: {
+        title: title,
+        body: body,
+      },
+      data: customData || {},
+    };
+
+    const response = await admin.messaging().send(message);
+
+    console.log(`✅ [FCM] Topic notification sent to ${topic}: ${response}`);
+
+    return { success: true, messageId: response };
   } catch (error) {
-    console.error('❌ [Cleanup] Error:', error);
+    console.error(`❌ [FCM] Topic notification error:`, error);
+    throw new functions.https.HttpsError('internal', error.message);
   }
 });
