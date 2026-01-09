@@ -282,12 +282,15 @@ class _AddMemberState extends State<AddMember> {
                                       color: isCurrentUser ? Colors.blue : Colors.grey.shade300,
                                       width: 2,
                                     ),
-                                    image: DecorationImage(
-                                      image: NetworkImage(
-                                        memberList[index]['avatar'] ?? widget.user.photoURL,
-                                      ),
-                                      fit: BoxFit.cover,
-                                    ),
+                                    image: (memberList[index]['avatar'] != null && memberList[index]['avatar'].toString().isNotEmpty) ||
+                                            (widget.user.photoURL != null && widget.user.photoURL!.isNotEmpty)
+                                        ? DecorationImage(
+                                            image: NetworkImage(
+                                              memberList[index]['avatar'] ?? widget.user.photoURL!,
+                                            ),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : null,
                                   ),
                                 ),
                                 Positioned(

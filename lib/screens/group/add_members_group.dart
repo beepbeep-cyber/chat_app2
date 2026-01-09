@@ -298,7 +298,13 @@ class _AddMemberInGroupState extends State<AddMemberInGroup> {
                                 ),
                                 child: CircleAvatar(
                                   radius: 24,
-                                  backgroundImage: NetworkImage(map['avatar']),
+                                  backgroundImage: map['avatar'] != null && map['avatar'].toString().isNotEmpty
+                                      ? NetworkImage(map['avatar'])
+                                      : null,
+                                  backgroundColor: AppTheme.primaryDark.withOpacity(0.1),
+                                  child: map['avatar'] == null || map['avatar'].toString().isEmpty
+                                      ? Icon(Icons.person, color: AppTheme.primaryDark.withOpacity(0.5))
+                                      : null,
                                 ),
                               ),
                               trailing: Container(

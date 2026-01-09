@@ -117,7 +117,10 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         .doc(widget.user.uid)
         .get()
         .then((value) {
-      avatarUrl = value.data()!['avatar'].toString();
+      final data = value.data();
+      if (data != null && data.containsKey('avatar')) {
+        avatarUrl = data['avatar'].toString();
+      }
     });
   }
 

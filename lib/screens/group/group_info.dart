@@ -70,7 +70,11 @@ class _GroupInfoState extends State<GroupInfo> {
         .then((value) {
       setState(() {
         membersList = value['members'];
-        groupAvatar = value['avatar'] ?? groupAvatar;
+        // Safe access to avatar field
+        final data = value.data() as Map<String, dynamic>?;
+        if (data != null && data.containsKey('avatar')) {
+          groupAvatar = data['avatar'];
+        }
         isLoading = false;
       });
     });
@@ -1418,10 +1422,16 @@ class _GroupInfoState extends State<GroupInfo> {
                               leading: Stack(
                                 children: [
                                   CircleAvatar(
-                                    backgroundImage: CachedNetworkImageProvider(
-                                      membersList[index]['avatar'],
-                                    ),
+                                    backgroundImage: membersList[index]['avatar'] != null && membersList[index]['avatar'].toString().isNotEmpty
+                                        ? CachedNetworkImageProvider(
+                                            membersList[index]['avatar'],
+                                          )
+                                        : null,
+                                    backgroundColor: AppTheme.primaryDark.withOpacity(0.1),
                                     radius: 22,
+                                    child: membersList[index]['avatar'] == null || membersList[index]['avatar'].toString().isEmpty
+                                        ? Icon(Icons.person, color: AppTheme.primaryDark.withOpacity(0.5))
+                                        : null,
                                   ),
                                   if (isAdmin)
                                     Positioned(
