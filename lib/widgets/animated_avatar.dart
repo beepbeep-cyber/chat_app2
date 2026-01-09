@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:my_porject/configs/app_theme.dart';
 
 /// Animated Avatar Widget with Online Status Ring
-/// Features: Pulse animation for online, gradient border, hero animation support
+/// Features: Pulse animation for online, gradient border, hero animation support, group chat support
 class AnimatedAvatar extends StatefulWidget {
   final String? imageUrl;
   final String name;
@@ -13,6 +13,7 @@ class AnimatedAvatar extends StatefulWidget {
   final bool enableHero;
   final String? heroTag;
   final VoidCallback? onTap;
+  final bool isGroup; // New: for group chat gradient icon
 
   const AnimatedAvatar({
     super.key,
@@ -24,6 +25,7 @@ class AnimatedAvatar extends StatefulWidget {
     this.enableHero = false,
     this.heroTag,
     this.onTap,
+    this.isGroup = false, // Default false for 1-1 chats
   });
 
   @override
@@ -129,6 +131,30 @@ class _AnimatedAvatarState extends State<AnimatedAvatar>
   }
 
   Widget _buildPlaceholder() {
+    // Group chat: Show gradient with groups icon
+    if (widget.isGroup) {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.accent,
+              AppTheme.accentDark,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.groups_rounded,
+            size: widget.size * 0.5,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+    
+    // 1-1 chat: Show initials
     return Container(
       color: AppTheme.gray100,
       child: Center(
@@ -244,13 +270,13 @@ class GroupAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          colors: [AppTheme.accent, AppTheme.accentDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+            color: AppTheme.accent.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -273,68 +299,20 @@ class GroupAvatar extends StatelessWidget {
 
   Widget _buildDefaultGroupIcon() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+        gradient: LinearGradient(
+          colors: [AppTheme.accent, AppTheme.accentDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
-      child: Stack(
-        children: [
-          // Group icon or initials
-          Center(
-            child: memberCount > 0
-                ? Icon(
-                    Icons.group_rounded,
-                    color: Colors.white,
-                    size: size * 0.5,
-                  )
-                : Text(
-                    _getInitials(),
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: size * 0.35,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-          ),
-          // Member count badge
-          if (memberCount > 0)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: size * 0.35,
-                height: size * 0.35,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.success,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.success.withValues(alpha: 0.4),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    memberCount > 99 ? '99+' : memberCount.toString(),
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: size * 0.15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
+      child: Center(
+        child: Icon(
+          Icons.groups_rounded,
+          color: Colors.white,
+          size: size * 0.5,
+        ),
       ),
     );
   }

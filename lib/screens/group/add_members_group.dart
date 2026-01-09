@@ -87,8 +87,7 @@ class _AddMemberInGroupState extends State<AddMemberInGroup> {
       'name': widget.groupName,
       'time': timeForMessage(DateTime.now().toString()),
       'uid': widget.groupId,
-      'avatar':
-          "https://firebasestorage.googleapis.com/v0/b/chatapptest2-93793.appspot.com/o/images%2F2a2c7410-7b06-11ed-aa52-c50d48cba6ef.jpg?alt=media&token=1b11fc5a-2294-4db8-94bf-7bd083f54b98",
+      // No avatar URL - frontend will show gradient icon
       'status': "Online",
       'datatype': "group",
       'timeStamp': DateTime.now(),

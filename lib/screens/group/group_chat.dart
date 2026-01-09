@@ -144,17 +144,27 @@ class _GroupChatHomeScreenState extends State<GroupChatHomeScreen> {
               Stack(
                 children: [
                   Container(
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: Colors.grey.shade300,
                         width: 2,
                       ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.accent,
+                          AppTheme.accentDark,
+                        ],
+                      ),
                     ),
-                    child: CircleAvatar(
-                      backgroundImage: CachedNetworkImageProvider(
-                          "https://firebasestorage.googleapis.com/v0/b/chatapptest2-93793.appspot.com/o/images%2F2a2c7410-7b06-11ed-aa52-c50d48cba6ef.jpg?alt=media&token=1b11fc5a-2294-4db8-94bf-7bd083f54b98"),
-                      radius: 28,
+                    child: Icon(
+                      Icons.groups_rounded,
+                      size: 30,
+                      color: Colors.white,
                     ),
                   ),
                   Positioned(
