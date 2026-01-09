@@ -372,7 +372,36 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Photo & Video
+            // Drag handle
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppTheme.gray300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Camera
+            ListTile(
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.info.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.camera_alt_outlined, color: AppTheme.info, size: 24),
+              ),
+              title: Text('Camera', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+              subtitle: Text('Take a photo or video', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+              onTap: () {
+                Navigator.pop(context);
+                _takePhoto();
+              },
+            ),
+            const SizedBox(height: 8),
+            // Photo & Video Gallery
             ListTile(
               leading: Container(
                 width: 44,
@@ -383,7 +412,8 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                 ),
                 child: Icon(Icons.photo_library_outlined, color: AppTheme.accent, size: 24),
               ),
-              title: Text('Photo & Video', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+              title: Text('Gallery', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+              subtitle: Text('Choose from gallery', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
               onTap: () {
                 Navigator.pop(context);
                 getImage();
@@ -402,6 +432,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                 child: Icon(Icons.insert_drive_file_outlined, color: AppTheme.accentDark, size: 24),
               ),
               title: Text('Document', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+              subtitle: Text('Share files', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
               onTap: () {
                 Navigator.pop(context);
                 _pickDocument();
@@ -420,6 +451,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                 child: Icon(Icons.location_on_outlined, color: AppTheme.success, size: 24),
               ),
               title: Text('Location', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+              subtitle: Text('Share your location', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
               onTap: () {
                 Navigator.pop(context);
                 if (widget.isDeviceConnected == false) {
@@ -433,6 +465,16 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         ),
       ),
     );
+  }
+
+  Future _takePhoto() async {
+    ImagePicker _picker = ImagePicker();
+    await _picker.pickImage(source: ImageSource.camera).then((xFile) {
+      if (xFile != null) {
+        imageFile = File(xFile.path);
+        uploadImage();
+      }
+    });
   }
 
   Future<void> _pickDocument() async {
@@ -743,39 +785,23 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       ],
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, color: AppTheme.gray700),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    onSelected: (value) {
-                      if (value == 'info') {
-                        Navigator.push(
-                          context,
-                          SlideRightRoute(
-                            page: GroupInfo(
-                              groupName: widget.groupName,
-                              groupId: widget.groupChatId,
-                              user: widget.user,
-                              memberListt: memberList,
-                              isDeviceConnected: widget.isDeviceConnected,
-                            ),
+                  // Direct navigate to Group Info (no popup)
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        SlideRightRoute(
+                          page: GroupInfo(
+                            groupName: widget.groupName,
+                            groupId: widget.groupChatId,
+                            user: widget.user,
+                            memberListt: memberList,
+                            isDeviceConnected: widget.isDeviceConnected,
                           ),
-                        );
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'info',
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, size: 20, color: AppTheme.gray700),
-                            SizedBox(width: 12),
-                            Text('Group Info'),
-                          ],
                         ),
-                      ),
-                    ],
+                      );
+                    },
+                    icon: Icon(Icons.info_outline, color: AppTheme.gray700, size: 24),
                   ),
                 ],
               ),
