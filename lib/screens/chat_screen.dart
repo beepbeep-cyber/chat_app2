@@ -902,7 +902,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       );
                     },
                     icon: const Icon(
-                      Icons.settings_outlined,
+                      Icons.info_outline,
                       color: AppTheme.textWhite,
                       size: 26,
                     ),
@@ -1911,75 +1911,100 @@ class _ChatScreenState extends State<ChatScreen> {
               topRight: Radius.circular(20),
             ),
           ),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           child: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 12),
+                // Drag handle
                 Container(
                   width: 40,
                   height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: AppTheme.gray300,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      // Photo & Video
-                      _buildAttachmentOption(
-                        icon: Icons.photo_library_outlined,
-                        label: 'Photo & Video',
-                        color: Colors.purple,
-                        onTap: () {
-                          Navigator.pop(context);
-                          getImage();
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      // Document
-                      _buildAttachmentOption(
-                        icon: Icons.insert_drive_file_outlined,
-                        label: 'Document',
-                        color: Colors.blue,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _pickDocument();
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      // Location
-                      _buildAttachmentOption(
-                        icon: Icons.location_on_outlined,
-                        label: 'Location',
-                        color: Colors.green,
-                        onTap: () {
-                          Navigator.pop(context);
-                          if (widget.isDeviceConnected == false) {
-                            showDialogInternetCheck();
-                          } else {
-                            initLocationDoc();
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      // Camera
-                      _buildAttachmentOption(
-                        icon: Icons.camera_alt_outlined,
-                        label: 'Camera',
-                        color: Colors.red,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _openCamera();
-                        },
-                      ),
-                    ],
+                // Camera
+                ListTile(
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.info.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.camera_alt_outlined, color: AppTheme.info, size: 24),
                   ),
+                  title: Text('Camera', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+                  subtitle: Text('Take a photo or video', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _openCamera();
+                  },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
+                // Gallery
+                ListTile(
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.photo_library_outlined, color: AppTheme.accent, size: 24),
+                  ),
+                  title: Text('Gallery', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+                  subtitle: Text('Choose from gallery', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    getImage();
+                  },
+                ),
+                const SizedBox(height: 8),
+                // Document
+                ListTile(
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentDark.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.insert_drive_file_outlined, color: AppTheme.accentDark, size: 24),
+                  ),
+                  title: Text('Document', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+                  subtitle: Text('Share files', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickDocument();
+                  },
+                ),
+                const SizedBox(height: 8),
+                // Location
+                ListTile(
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.location_on_outlined, color: AppTheme.success, size: 24),
+                  ),
+                  title: Text('Location', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.primaryDark)),
+                  subtitle: Text('Share your location', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (widget.isDeviceConnected == false) {
+                      showDialogInternetCheck();
+                    } else {
+                      initLocationDoc();
+                    }
+                  },
+                ),
               ],
             ),
           ),
