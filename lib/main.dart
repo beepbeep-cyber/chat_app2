@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:my_porject/resources/firebase_options.dart';
 import 'package:my_porject/screens/login_screen.dart';
@@ -9,7 +10,19 @@ import 'package:my_porject/screens/chathome_screen.dart';
 import 'package:my_porject/provider/user_provider.dart';
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:my_porject/services/biometric_auth_service.dart';
+import 'package:my_porject/services/fcm_service.dart';
 import 'package:my_porject/screens/biometric_lock_screen.dart';
+
+// Background message handler - must be top-level function
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (kDebugMode) {
+    debugPrint('🔔 [FCM] Background message: ${message.messageId}');
+    debugPrint('🔔 [FCM] Title: ${message.notification?.title}');
+    debugPrint('🔔 [FCM] Body: ${message.notification?.body}');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +31,14 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Register background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
+  if (kDebugMode) {
+    debugPrint('✅ [Main] Firebase initialized');
+    debugPrint('✅ [Main] FCM background handler registered');
+  }
   
   // Set Firebase Auth persistence to LOCAL (persist across app restarts)
   // This ensures user stays logged in after killing the app
@@ -97,6 +118,25 @@ class _AppLauncherState extends State<AppLauncher> {
   void initState() {
     super.initState();
     _checkBiometricRequirement();
+    _initializeFCM();
+  }
+
+  Future<void> _initializeFCM() async {
+    try {
+      // Wait a bit to ensure Firebase is fully ready
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Initialize FCM service
+      await FCMService().initialize();
+      
+      if (kDebugMode) {
+        debugPrint('✅ [AppLauncher] FCM initialized successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [AppLauncher] FCM initialization error: $e');
+      }
+    }
   }
 
   Future<void> _checkBiometricRequirement() async {
