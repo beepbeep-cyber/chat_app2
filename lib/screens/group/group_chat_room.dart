@@ -652,57 +652,6 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     );
   }
 
-  // Voice recording bottom sheet
-  void _showVoiceRecording() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.5,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag handle
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: AppTheme.gray300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Voice recording UI
-            Icon(Icons.mic, size: 80, color: AppTheme.accent),
-            const SizedBox(height: 20),
-            Text(
-              'Hold to record',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.primaryDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Release to send',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.gray600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -901,7 +850,11 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       },
                     )),
               ),
-              Column(
+                  ],
+                ),
+              ),
+            ),
+            Column(
                 children: [
                   Container(
                     width: double.infinity,
@@ -1051,7 +1004,6 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
               showEmoji ? showEmojiPicker() : Container(),
             ],
           ),
-        ),
       ),
     );
   }
