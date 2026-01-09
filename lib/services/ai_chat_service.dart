@@ -102,6 +102,31 @@ class AIChatService {
   static Future<void> _loadMultipleApiKeys(RemoteConfigService remoteConfig) async {
     _apiKeys.clear();
     
+    // 🔥 TEMPORARY FIX: Hardcode keys for testing
+    // TODO: Remove this after Remote Config is fixed
+    const hardcodedKeys = [
+      'AIzaSyC0JZBVaCyq8FUiakLT73Wfg0TBxzLkmQk',
+      'AIzaSyAxSt3RGX0PtGGjR3H1Uv3z8UL-NfBp_wk',
+      'AIzaSyAiaBz4nSAwgUexE7eIYkF6eyUcXJpcpiI',
+      'AIzaSyATkoDQA5I1BMWkhg2sbk02w1yTdf5AdsI',
+      'AIzaSyBWPFwPm_pACYSxN0SJsFbUkVqS16rJScU',
+    ];
+    
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('🔥 USING HARDCODED KEYS (TESTING MODE)');
+    debugPrint('═══════════════════════════════════════');
+    
+    _apiKeys.addAll(hardcodedKeys);
+    debugPrint('✅ Loaded ${_apiKeys.length} hardcoded keys');
+    for (int i = 0; i < _apiKeys.length; i++) {
+      debugPrint('   Key ${i + 1}: ${_apiKeys[i].substring(0, 10)}...${_apiKeys[i].substring(_apiKeys[i].length - 5)}');
+    }
+    
+    // Assign random key to this user session
+    _assignKeyToUser();
+    debugPrint('═══════════════════════════════════════');
+    return; // Skip Remote Config for now
+    
     // Try to get multiple keys (comma-separated or JSON array)
     final keysString = remoteConfig.geminiApiKeys; // New field for multiple keys
     
