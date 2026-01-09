@@ -264,6 +264,13 @@ class GroupAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if imageUrl is valid and not the old default URL
+    final isValidImageUrl = imageUrl != null && 
+        imageUrl!.isNotEmpty && 
+        imageUrl!.startsWith('http') &&
+        !imageUrl!.contains('2a2c7410-7b06-11ed') && // Filter old default avatar
+        !imageUrl!.contains('default_group.png'); // Filter old default group avatar
+    
     return Container(
       width: size,
       height: size,
@@ -282,7 +289,7 @@ class GroupAvatar extends StatelessWidget {
           ),
         ],
       ),
-      child: imageUrl != null && imageUrl!.isNotEmpty && imageUrl!.startsWith('http')
+      child: isValidImageUrl
           ? ClipOval(
               child: CachedNetworkImage(
                 imageUrl: imageUrl!,

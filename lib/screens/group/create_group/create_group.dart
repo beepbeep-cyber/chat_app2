@@ -125,18 +125,19 @@ class _CreateGroupState extends State<CreateGroup> {
     final Size size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryDark,
-        elevation: 2,
-        shadowColor: Colors.black.withValues(alpha: 0.3),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppTheme.gray100),
+          icon: Icon(Icons.arrow_back, color: AppTheme.primaryDark),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           "Create New Group",
           style: TextStyle(
-            color: AppTheme.gray100,
+            color: AppTheme.primaryDark,
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
