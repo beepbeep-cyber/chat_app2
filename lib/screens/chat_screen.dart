@@ -332,7 +332,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'encrypted': false,
           'type': "text",
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
+          'timeStamp': FieldValue.serverTimestamp(),
         };
         await _firestore
             .collection('chatroom')
@@ -360,7 +360,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': widget.userMap['avatar'],
         'status': widget.userMap['status'],
         'datatype': 'p2p',
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
         'isRead': true,
       });
       String? currentUserAvatar;
@@ -387,7 +387,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': currentUserAvatar,
         'status': status,
         'datatype': 'p2p',
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),  // ← FIX: Use server timestamp
         'isRead': false,
       });
     } else {
@@ -409,98 +409,120 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future uploadImage() async {
-    String fileName = const Uuid().v1();
-
-    int status = 1;
-
-    await _firestore
-        .collection('chatroom')
-        .doc(widget.chatRoomId)
-        .collection('chats')
-        .doc(fileName)
-        .set({
-      'sendBy': widget.user.displayName,
-      'message': _message.text,
-      'type': "img",
-      'time': timeForMessage(DateTime.now().toString()),
-      'timeStamp': DateTime.now(),
+    // Show loading indicator
+    setState(() {
+      isLoading = true;
     });
 
-    var ref =
-        FirebaseStorage.instance.ref().child('images').child("$fileName.jpg");
+    try {
+      String fileName = const Uuid().v1();
 
-    var uploadTask = await ref.putFile(imageFile!).catchError((error) async {
-      await _firestore
-          .collection('chatroom')
-          .doc(widget.chatRoomId)
-          .collection('chats')
-          .doc(fileName)
-          .delete();
-      status = 0;
-      throw error; // Re-throw to satisfy return type
-    });
-
-    if (status == 1) {
-      String imageUrl = await uploadTask.ref.getDownloadURL();
+      int status = 1;
 
       await _firestore
           .collection('chatroom')
           .doc(widget.chatRoomId)
           .collection('chats')
           .doc(fileName)
-          .update({
-        'message': imageUrl,
-      });
-      await _firestore.collection('chatroom').doc(widget.chatRoomId).set({
-        'user1': widget.user.displayName,
-        'user2': widget.userMap['name'],
-        'lastMessage': "Bạn đã gửi 1 ảnh",
-        'type': "img",
-        'uid': widget.userMap['uid'],
-      });
-      await _firestore
-          .collection('users')
-          .doc(_auth.currentUser!.uid)
-          .collection('chatHistory')
-          .doc(widget.userMap['uid'])
           .set({
-        'lastMessage': "Bạn đã gửi 1 ảnh",
+        'sendBy': widget.user.displayName,
+        'message': _message.text,
         'type': "img",
-        'name': widget.userMap['name'],
         'time': timeForMessage(DateTime.now().toString()),
-        'uid': widget.userMap['uid'],
-        'avatar': widget.userMap['avatar'],
-        'status': widget.userMap['status'],
-        'datatype': 'p2p',
-        'timeStamp': DateTime.now(),
-        'isRead': true,
+        'timeStamp': FieldValue.serverTimestamp(),
       });
-      String? currentUserAvatar;
-      String? status;
-      await _firestore
-          .collection("users")
-          .where("email", isEqualTo: _auth.currentUser!.email)
-          .get()
-          .then((value) {
-        currentUserAvatar = value.docs[0]['avatar'];
-        status = value.docs[0]['status'];
+
+      var ref =
+          FirebaseStorage.instance.ref().child('images').child("$fileName.jpg");
+
+      var uploadTask = await ref.putFile(imageFile!).catchError((error) async {
+        await _firestore
+            .collection('chatroom')
+            .doc(widget.chatRoomId)
+            .collection('chats')
+            .doc(fileName)
+            .delete();
+        status = 0;
+        throw error; // Re-throw to satisfy return type
       });
-      await _firestore
-          .collection('users')
-          .doc(widget.userMap['uid'])
-          .collection('chatHistory')
-          .doc(_auth.currentUser!.uid)
-          .set({
-        'lastMessage': "${widget.user.displayName} đã gửi 1 ảnh",
-        'type': "img",
-        'name': widget.user.displayName,
-        'time': timeForMessage(DateTime.now().toString()),
-        'uid': _auth.currentUser!.uid,
-        'avatar': currentUserAvatar,
-        'status': status,
-        'datatype': 'p2p',
-        'timeStamp': DateTime.now(),
-        'isRead': false,
+
+      if (status == 1) {
+        String imageUrl = await uploadTask.ref.getDownloadURL();
+
+        await _firestore
+            .collection('chatroom')
+            .doc(widget.chatRoomId)
+            .collection('chats')
+            .doc(fileName)
+            .update({
+          'message': imageUrl,
+        });
+        await _firestore.collection('chatroom').doc(widget.chatRoomId).set({
+          'user1': widget.user.displayName,
+          'user2': widget.userMap['name'],
+          'lastMessage': "Bạn đã gửi 1 ảnh",
+          'type': "img",
+          'uid': widget.userMap['uid'],
+        });
+        await _firestore
+            .collection('users')
+            .doc(_auth.currentUser!.uid)
+            .collection('chatHistory')
+            .doc(widget.userMap['uid'])
+            .set({
+          'lastMessage': "Bạn đã gửi 1 ảnh",
+          'type': "img",
+          'name': widget.userMap['name'],
+          'time': timeForMessage(DateTime.now().toString()),
+          'uid': widget.userMap['uid'],
+          'avatar': widget.userMap['avatar'],
+          'status': widget.userMap['status'],
+          'datatype': 'p2p',
+          'timeStamp': FieldValue.serverTimestamp(),
+          'isRead': true,
+        });
+        String? currentUserAvatar;
+        String? status;
+        await _firestore
+            .collection("users")
+            .where("email", isEqualTo: _auth.currentUser!.email)
+            .get()
+            .then((value) {
+          currentUserAvatar = value.docs[0]['avatar'];
+          status = value.docs[0]['status'];
+        });
+        await _firestore
+            .collection('users')
+            .doc(widget.userMap['uid'])
+            .collection('chatHistory')
+            .doc(_auth.currentUser!.uid)
+            .set({
+          'lastMessage': "${widget.user.displayName} đã gửi 1 ảnh",
+          'type': "img",
+          'name': widget.user.displayName,
+          'time': timeForMessage(DateTime.now().toString()),
+          'uid': _auth.currentUser!.uid,
+          'avatar': currentUserAvatar,
+          'status': status,
+          'datatype': 'p2p',
+          'timeStamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error uploading image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send photo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      // Hide loading indicator
+      setState(() {
+        isLoading = false;
       });
     }
   }
@@ -604,7 +626,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'message': 'Uploading photo...',
       'type': "img",
       'time': timeForMessage(DateTime.now().toString()),
-      'timeStamp': DateTime.now(),
+      'timeStamp': FieldValue.serverTimestamp(),
     });
 
     // Upload to Firebase Storage
@@ -661,7 +683,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': widget.userMap['avatar'],
         'status': widget.userMap['status'],
         'datatype': 'p2p',
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
         'isRead': true,
       });
 
@@ -694,7 +716,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': currentUserAvatar,
         'status': userStatus,
         'datatype': 'p2p',
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
         'isRead': false,
       });
     }
@@ -2307,7 +2329,7 @@ class _ChatScreenState extends State<ChatScreen> {
         "type": "voice",
         "time": timeForMessage(DateTime.now().toString()),
         'avatar': widget.user.photoURL ?? '',
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
         'fileSize': fileSize,
       };
 
@@ -2316,13 +2338,13 @@ class _ChatScreenState extends State<ChatScreen> {
       // Update chat history for current user
       await _firestore.collection('users').doc(_auth.currentUser!.uid).collection('chatHistory').doc(widget.userMap['uid']).update({
         'recentMessage': '🎤 Voice message',
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
       });
 
       // Update chat history for recipient
       await _firestore.collection('users').doc(widget.userMap['uid']).collection('chatHistory').doc(_auth.currentUser!.uid).update({
         'recentMessage': '🎤 Voice message',
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
       });
 
       if (kDebugMode) { debugPrint('✅ [ChatScreen] Voice message sent successfully'); }
@@ -2463,7 +2485,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'type': "location",
       'time': timeForMessage(DateTime.now().toString()),
       'messageId': messageId,
-      'timeStamp': DateTime.now(),
+      'timeStamp': FieldValue.serverTimestamp(),
     });
     await _firestore
         .collection('users')
@@ -2488,7 +2510,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'avatar': widget.userMap['avatar'],
       'status': widget.userMap['status'],
       'datatype': 'p2p',
-      'timeStamp': DateTime.now(),
+      'timeStamp': FieldValue.serverTimestamp(),
       'isRead': true,
     });
     String? currentUserAvatar;
@@ -2515,7 +2537,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'avatar': currentUserAvatar,
       'status': status,
       'datatype': 'p2p',
-      'timeStamp': DateTime.now(),
+      'timeStamp': FieldValue.serverTimestamp(),
       'isRead': false,
     });
   }
@@ -2893,7 +2915,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': 'Bạn: $message',
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
+          'timeStamp': FieldValue.serverTimestamp(),
         });
         await _firestore
             .collection('users')
@@ -2903,7 +2925,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': message,
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
+          'timeStamp': FieldValue.serverTimestamp(),
         });
       }
     }
@@ -2939,7 +2961,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': 'Bạn đã xóa một tin nhắn',
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
+          'timeStamp': FieldValue.serverTimestamp(),
         });
         await _firestore
             .collection('users')
@@ -2949,7 +2971,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': '${widget.user.displayName} đã xóa một tin nhắn',
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
+          'timeStamp': FieldValue.serverTimestamp(),
         });
       }
     }
