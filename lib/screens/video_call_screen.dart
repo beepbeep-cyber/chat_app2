@@ -248,12 +248,12 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             .doc(widget.calleeUid)
             .collection('chatHistory')
             .doc(widget.chatRoomId)
-            .update({
+            .set({
           'lastMessage': callMessage,
           'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
           'timeStamp': FieldValue.serverTimestamp(),
           'isRead': false,
-        });
+        }, SetOptions(merge: true));
       }
       
       // Update caller's chat history (người gọi - current user)
@@ -263,12 +263,12 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             .doc(currentUser.uid)
             .collection('chatHistory')
             .doc(widget.chatRoomId)
-            .update({
+            .set({
           'lastMessage': callMessage,
           'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
           'timeStamp': FieldValue.serverTimestamp(),
           'isRead': true, // Caller already knows about the call
-        });
+        }, SetOptions(merge: true));
       }
 
       debugPrint('📞 VideoCall: Call message sent to chat - $callMessage');
