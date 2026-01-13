@@ -258,6 +258,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           'type': 'videocall',
           'name': widget.userName ?? 'Unknown',
           'uid': currentUser?.uid ?? '',
+          'avatar': widget.userAvatar ?? '',
           'datatype': 'p2p',
         }, SetOptions(merge: true));
       }
@@ -277,6 +278,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           'type': 'videocall',
           'name': widget.calleeName ?? 'Unknown',
           'uid': widget.calleeUid ?? '',
+          'avatar': widget.calleeAvatar ?? '',
           'datatype': 'p2p',
         }, SetOptions(merge: true));
       }

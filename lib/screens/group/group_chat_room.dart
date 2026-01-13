@@ -854,12 +854,20 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                             groupSeparatorBuilder: (String groupByValue) =>
                                 Container(
                               alignment: Alignment.center,
-                              height: 30,
-                              child: Text(
-                                formatTimestampSafe(groupByValue),
-                                style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.bold),
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  formatTimestampSafe(groupByValue),
+                                  style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500),
+                                ),
                               ),
                             ),
                             // itemCount: snapshot.data?.docs.length as int ,
