@@ -255,6 +255,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
           'timeStamp': FieldValue.serverTimestamp(),
           'isRead': false,
+          'type': 'videocall',
+          'name': widget.userName ?? 'Unknown',
+          'uid': currentUser?.uid ?? '',
+          'datatype': 'p2p',
         }, SetOptions(merge: true));
       }
       
@@ -270,6 +274,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
           'timeStamp': FieldValue.serverTimestamp(),
           'isRead': true, // Caller already knows about the call
+          'type': 'videocall',
+          'name': widget.calleeName ?? 'Unknown',
+          'uid': widget.calleeUid ?? '',
+          'datatype': 'p2p',
         }, SetOptions(merge: true));
       }
 
