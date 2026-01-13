@@ -553,24 +553,59 @@ class _ChatScreenState extends State<ChatScreen> {
 
       debugPrint('📷 Camera: Photo captured: ${photo.path}');
 
-      // Show loading overlay
+      // Show loading overlay using isLoading state
       if (mounted) {
-        LoadingUtils.show(context, message: 'Sending photo...');
+        setState(() {
+          isLoading = true;
+        });
       }
 
-      // Upload photo
-      imageFile = File(photo.path);
-      await _uploadCameraPhoto();
+      try {
+        // Upload photo
+        imageFile = File(photo.path);
+        await _uploadCameraPhoto();
 
-      // Hide loading overlay
-      LoadingUtils.hide();
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Photo sent successfully!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('❌ Camera: Upload failed - $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.error, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Failed to send photo'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } finally {
+        // Hide loading overlay
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
                 Text('Photo sent successfully!'),
@@ -2186,31 +2221,75 @@ class _ChatScreenState extends State<ChatScreen> {
 
       debugPrint('📁 ChatScreen: File selected: ${file.name}');
 
-      // Show loading overlay
-      LoadingUtils.show(context, message: 'Uploading ${file.name}...');
+      // Show loading overlay using isLoading state
+      if (mounted) {
+        setState(() {
+          isLoading = true;
+        });
+      }
 
-      // Upload file
-      final result = await FileSharingService.uploadFile(
-        file: file,
-        chatRoomId: widget.chatRoomId,
-        onProgress: (progress) {
-          debugPrint('📁 ChatScreen: Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
-        },
-      );
+      try {
+        // Upload file
+        final result = await FileSharingService.uploadFile(
+          file: file,
+          chatRoomId: widget.chatRoomId,
+          onProgress: (progress) {
+            debugPrint('📁 ChatScreen: Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
+          },
+        );
 
-      // Hide loading overlay
-      LoadingUtils.hide();
+        debugPrint('✅ ChatScreen: File uploaded successfully');
 
-      debugPrint('✅ ChatScreen: File uploaded successfully');
+        // Gửi file message
+        await _sendFileMessage(
+          downloadUrl: result.downloadUrl,
+          fileName: result.fileName,
+          fileSize: result.fileSize,
+          fileExtension: result.fileExtension,
+          storagePath: result.storagePath,
+        );
 
-      // Gửi file message
-      await _sendFileMessage(
-        downloadUrl: result.downloadUrl,
-        fileName: result.fileName,
-        fileSize: result.fileSize,
-        fileExtension: result.fileExtension,
-        storagePath: result.storagePath,
-      );
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('File sent successfully!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('❌ File upload failed: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.error, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Failed to send file'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } finally {
+        // Hide loading overlay
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

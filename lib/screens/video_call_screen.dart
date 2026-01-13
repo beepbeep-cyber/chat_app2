@@ -229,7 +229,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         'callStatus': callStatus,
         'callDuration': _callDuration,
         'timeSpend': _callDuration,
-        'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
         'timeStamp': FieldValue.serverTimestamp(),
       });
 
@@ -260,7 +259,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             .doc(currentUser?.uid ?? '')  // ← FIX: Use caller's UID, not chatRoomId!
             .set({
           'lastMessage': callMessage,
-          'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
           'timeStamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'type': 'videocall',
@@ -282,7 +280,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             .doc(widget.calleeUid ?? '')  // ← FIX: Use callee's UID, not chatRoomId!
             .set({
           'lastMessage': callMessage,
-          'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
           'timeStamp': FieldValue.serverTimestamp(),
           'isRead': true, // Caller already knows about the call
           'type': 'videocall',
