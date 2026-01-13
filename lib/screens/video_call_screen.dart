@@ -212,8 +212,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       final firestore = FirebaseFirestore.instance;
       final callStatus = _remoteUid != null ? 'completed' : 'missed';
       final callMessage = _remoteUid != null 
-          ? 'Video call - ${_formatDuration(_callDuration)}'
-          : 'Missed video call';
+          ? '📞 Video call - ${_formatDuration(_callDuration)}'
+          : '📞 Missed video call';
+
+      debugPrint('📞 VideoCall: Sending call message - userName: ${widget.userName}, calleeName: ${widget.calleeName}');
 
       // Add call message to chat
       await firestore
@@ -221,7 +223,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           .doc(widget.chatRoomId)
           .collection('chats')
           .add({
-        'sendBy': widget.userName,
+        'sendBy': widget.userName ?? 'Unknown',
         'message': callMessage,
         'type': 'videocall',
         'callStatus': callStatus,
