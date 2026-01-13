@@ -81,6 +81,52 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
     });
   }
 
+  /// Show success notification at TOP (below AppBar)
+  void _showSuccessNotification(String message, {IconData icon = Icons.check_circle}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 160, // TOP position
+          left: 16,
+          right: 16,
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Show error notification at TOP (below AppBar)
+  void _showErrorNotification(String message, {IconData icon = Icons.error}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 160, // TOP position
+          left: 16,
+          right: 16,
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     updateIsReadMessage();
@@ -547,20 +593,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(child: Text('File đã được gửi thành công!')),
-              ],
-            ),
-            backgroundColor: AppTheme.success,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        _showSuccessNotification('File đã được gửi thành công!');
       }
     } on FileException catch (e) {
       // Đóng dialog loading nếu đang mở
@@ -571,20 +604,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       debugPrint('❌ GroupChatRoom: FileException: $e');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(e.message)),
-              ],
-            ),
-            backgroundColor: AppTheme.error,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        _showErrorNotification(e.message, icon: Icons.error_outline);
       }
     } catch (e) {
       // Đóng dialog loading nếu đang mở
@@ -595,19 +615,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       debugPrint('❌ GroupChatRoom: Error picking/uploading document: $e');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.error_outline, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(child: Text('Lỗi khi gửi file. Vui lòng thử lại!')),
-              ],
-            ),
-            backgroundColor: AppTheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showErrorNotification('Lỗi khi gửi file. Vui lòng thử lại!', icon: Icons.error_outline);
       }
     }
   }
@@ -2219,12 +2227,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       });
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send voice message: $e'),
-            backgroundColor: AppTheme.error,
-          ),
-        );
+        _showErrorNotification('Failed to send voice message: $e');
       }
     }
   }
@@ -2281,8 +2284,21 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Microphone permission denied'),
+            content: Row(
+              children: const [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Microphone permission denied'),
+              ],
+            ),
             backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).size.height - 160,
+              left: 16,
+              right: 16,
+            ),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -2310,8 +2326,21 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Failed to upload voice message'),
+              content: Row(
+                children: const [
+                  Icon(Icons.error, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Failed to upload voice message'),
+                ],
+              ),
               backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height - 160,
+                left: 16,
+                right: 16,
+              ),
+              duration: const Duration(seconds: 3),
             ),
           );
         }

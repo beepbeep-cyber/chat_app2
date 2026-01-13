@@ -115,6 +115,52 @@ class _ChatScreenState extends State<ChatScreen> {
     return '';
   }
 
+  /// Show success notification at TOP (below AppBar)
+  void _showSuccessNotification(String message, {IconData icon = Icons.check_circle}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 160, // TOP position
+          left: 16,
+          right: 16,
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Show error notification at TOP (below AppBar)
+  void _showErrorNotification(String message, {IconData icon = Icons.error}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 160, // TOP position
+          left: 16,
+          right: 16,
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   @override
   void initState() {
     getConnectivity();
@@ -512,12 +558,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('❌ Error uploading image: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send photo: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorNotification('Failed to send photo: $e');
       }
     } finally {
       // Hide loading indicator
@@ -567,36 +608,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Show success message
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: const [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('Photo sent successfully!'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          _showSuccessNotification('Photo sent successfully!');
         }
       } catch (e) {
         debugPrint('❌ Camera: Upload failed - $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: const [
-                  Icon(Icons.error, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('Failed to send photo'),
-                ],
-              ),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          _showErrorNotification('Failed to send photo');
         }
       } finally {
         // Hide loading overlay
@@ -615,19 +632,7 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('❌ Camera error: $e');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.error_outline, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(child: Text('Failed to send photo. Please try again.')),
-              ],
-            ),
-            backgroundColor: Colors.red[700],
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showErrorNotification('Failed to send photo. Please try again.', icon: Icons.error_outline);
       }
     }
   }
@@ -1235,74 +1240,71 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
-            // 🔄 Modern Loading Overlay - Material Design 3
+            // 🔄 Modern Loading Overlay - CENTER with Blur Background
             if (isLoading)
-              Positioned(
-                bottom: 20,
-                left: 20,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.blue.shade700.withValues(alpha: 0.95),
-                          Colors.blue.shade600.withValues(alpha: 0.95),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withValues(alpha: 0.4),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.5), // Blur background
+                  child: Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blue.shade700.withValues(alpha: 0.98),
+                              Colors.blue.shade600.withValues(alpha: 0.98),
+                            ],
                           ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withValues(alpha: 0.5),
+                              blurRadius: 24,
+                              spreadRadius: 4,
+                              offset: const Offset(0, 8),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 14),
-                        Column(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 4,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
                             Text(
                               'Sending photo',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 6),
                             Text(
                               'Please wait...',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 11,
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 13,
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -2240,36 +2242,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Show success message
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: const [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('File sent successfully!'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          _showSuccessNotification('File sent successfully!');
         }
       } catch (e) {
         debugPrint('❌ File upload failed: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: const [
-                  Icon(Icons.error, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('Failed to send file'),
-                ],
-              ),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          _showErrorNotification('Failed to send file');
         }
       } finally {
         // Hide loading overlay
@@ -2278,23 +2256,6 @@ class _ChatScreenState extends State<ChatScreen> {
             isLoading = false;
           });
         }
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(child: Text('File đã được gửi thành công!')),
-              ],
-            ),
-            backgroundColor: Colors.green[700],
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
       }
     } on FileException catch (e) {
       // Đóng dialog loading nếu đang mở
@@ -2305,20 +2266,7 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('❌ ChatScreen: FileException: $e');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(e.message)),
-              ],
-            ),
-            backgroundColor: Colors.red[700],
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        _showErrorNotification(e.message, icon: Icons.error_outline);
       }
     } catch (e) {
       // Đóng dialog loading nếu đang mở
@@ -2329,13 +2277,8 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('❌ ChatScreen: Error picking/uploading document: $e');
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.error_outline, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(child: Text('Lỗi khi gửi file. Vui lòng thử lại!')),
+        _showErrorNotification('Lỗi khi gửi file. Vui lòng thử lại!', icon: Icons.error_outline);
+      }
               ],
             ),
             backgroundColor: Colors.red[700],
@@ -2457,12 +2400,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send voice message: $e'),
-            backgroundColor: Colors.red[700],
-          ),
-        );
+        _showErrorNotification('Failed to send voice message: $e');
       }
     }
   }
@@ -3157,12 +3095,7 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
       if (kDebugMode) { debugPrint('❌ [BottomSheet] Failed to start recording'); }
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Microphone permission denied'),
-            backgroundColor: Colors.red[700],
-          ),
-        );
+        _showErrorNotification('Microphone permission denied');
       }
     }
   }
@@ -3190,12 +3123,7 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
         if (kDebugMode) { debugPrint('❌ [BottomSheet] Upload failed'); }
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Failed to upload voice message'),
-              backgroundColor: Colors.red[700],
-            ),
-          );
+          _showErrorNotification('Failed to upload voice message');
         }
       }
     } else {
