@@ -912,14 +912,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
-        body: isLoading
-            ? Container(
-                height: size.height,
-                width: size.width,
-                alignment: Alignment.center,
-                child: const CircularProgressIndicator(),
-              )
-            : RefreshIndicator(
+        body: Stack(
+          children: [
+            RefreshIndicator(
                 onRefresh: () {
                   return abc();
                 },
@@ -1194,6 +1189,50 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
+            // 🔄 Loading overlay - small, non-intrusive
+            if (isLoading)
+              Positioned(
+                bottom: 20,
+                left: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Sending photo...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1438,6 +1477,26 @@ class _ChatScreenState extends State<ChatScreen> {
                                   placeholder: (context, url) => Container(
                                     color: Colors.grey.shade200,
                                     child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: Colors.grey.shade300,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.broken_image_outlined, 
+                                          size: 48, 
+                                          color: Colors.grey.shade600
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Failed to load image',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ))
                             : const CircularProgressIndicator(),
