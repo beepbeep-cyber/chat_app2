@@ -160,7 +160,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         "type": "text",
         "time": timeForMessage(DateTime.now().toString()),
         'avatar': avatarUrl,
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
         'isEncrypted': encryptionSucceeded, // Mark if encryption succeeded
       };
 
@@ -186,7 +186,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           'lastMessage': historyPreview,
           'type': "text",
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
+          'timeStamp': FieldValue.serverTimestamp(),
           'isRead': false,
         });
       }
@@ -287,7 +287,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       'type': "img",
       'time': timeForMessage(DateTime.now().toString()),
       'avatar': avatarUrl,
-      'timeStamp': DateTime.now(),
+      'timeStamp': FieldValue.serverTimestamp(),
     });
 
     var ref =
@@ -325,7 +325,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           'lastMessage': "${widget.user.displayName} đã gửi một ảnh",
           'type': "img",
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': DateTime.now(),
+          'timeStamp': FieldValue.serverTimestamp(),
           'isRead': false,
         });
       }
@@ -632,7 +632,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         "type": "file",
         "time": FieldValue.serverTimestamp(),
         "avatar": widget.user.photoURL,
-        "timeStamp": DateTime.now(),
+        "timeStamp": FieldValue.serverTimestamp(),
         // File metadata
         "fileName": fileName,
         "fileSize": fileSize,
@@ -1785,7 +1785,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       'avatar': avatarUrl,
       'messageId': messageId,
       'uid': _auth.currentUser!.uid,
-      'timeStamp': DateTime.now(),
+      'timeStamp': FieldValue.serverTimestamp(),
     });
 
     await _firestore
@@ -1807,7 +1807,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         'lastMessage': "${widget.user.displayName} đã gửi một vị trí trực tiếp",
         'type': "location",
         'time': timeForMessage(DateTime.now().toString()),
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
         'isRead': false,
       });
     }
@@ -2094,7 +2094,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
               .update({
             'lastMessage': '${widget.user.displayName}: $message',
             'time': timeForMessage(DateTime.now().toString()),
-            'timeStamp': DateTime.now(),
+            'timeStamp': FieldValue.serverTimestamp(),
             'isRead': false,
           });
         }
@@ -2133,7 +2133,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
               .update({
             'lastMessage': '${widget.user.displayName} đã xóa một tin nhắn',
             'time': timeForMessage(DateTime.now().toString()),
-            'timeStamp': DateTime.now(),
+            'timeStamp': FieldValue.serverTimestamp(),
             'isRead': false,
           });
         }
@@ -2196,7 +2196,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         "type": "voice",
         "time": timeForMessage(DateTime.now().toString()),
         'avatar': avatarUrl,
-        'timeStamp': DateTime.now(),
+        'timeStamp': FieldValue.serverTimestamp(),
         'fileSize': fileSize,
         'isEncrypted': false, // Voice messages not encrypted
       };
@@ -2470,6 +2470,10 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
           const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+}
+
     );
   }
 }

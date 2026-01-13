@@ -2270,7 +2270,7 @@ class _ChatScreenState extends State<ChatScreen> {
         "type": "file",
         "time": FieldValue.serverTimestamp(),
         "avatar": widget.user.photoURL,
-        "timeStamp": DateTime.now(),
+        "timeStamp": FieldValue.serverTimestamp(),
         // File metadata
         "fileName": fileName,
         "fileSize": fileSize,
@@ -2285,7 +2285,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .collection('chatroom')
           .doc(widget.chatRoomId)
           .update({
-        "last_time": DateTime.now(),
+        "last_time": FieldValue.serverTimestamp(),
         "last_chat": "📁 $fileName",
       });
 
