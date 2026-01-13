@@ -243,13 +243,21 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       // Update chat history for both users
       final currentUser = FirebaseAuth.instance.currentUser;
       
+      // 🔍 DEBUG: Log all parameters
+      debugPrint('📞 VideoCall Update ChatHistory:');
+      debugPrint('   chatRoomId: ${widget.chatRoomId}');
+      debugPrint('   userName: ${widget.userName}');
+      debugPrint('   calleeName: ${widget.calleeName}');
+      debugPrint('   calleeUid: ${widget.calleeUid}');
+      debugPrint('   currentUser.uid: ${currentUser?.uid}');
+      
       // Update callee's chat history (người nhận cuộc gọi)
       if (widget.calleeUid != null) {
         await firestore
             .collection('users')
             .doc(widget.calleeUid)
             .collection('chatHistory')
-            .doc(widget.chatRoomId)
+            .doc(currentUser?.uid ?? '')  // ← FIX: Use caller's UID, not chatRoomId!
             .set({
           'lastMessage': callMessage,
           'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
@@ -261,6 +269,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           'avatar': widget.userAvatar ?? '',
           'datatype': 'p2p',
         }, SetOptions(merge: true));
+        
+        debugPrint('✅ VideoCall: Updated callee chatHistory (doc: ${currentUser?.uid})');
       }
       
       // Update caller's chat history (người gọi - current user)
@@ -269,7 +279,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             .collection('users')
             .doc(currentUser.uid)
             .collection('chatHistory')
-            .doc(widget.chatRoomId)
+            .doc(widget.calleeUid ?? '')  // ← FIX: Use callee's UID, not chatRoomId!
             .set({
           'lastMessage': callMessage,
           'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
@@ -281,6 +291,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           'avatar': widget.calleeAvatar ?? '',
           'datatype': 'p2p',
         }, SetOptions(merge: true));
+        
+        debugPrint('✅ VideoCall: Updated caller chatHistory (doc: ${widget.calleeUid})');
       }
 
       debugPrint('📞 VideoCall: Call message sent to chat - $callMessage');
