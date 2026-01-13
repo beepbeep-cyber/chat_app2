@@ -855,19 +855,12 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                 Container(
                               alignment: Alignment.center,
                               margin: const EdgeInsets.symmetric(vertical: 12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  formatTimestampSafe(groupByValue),
-                                  style: TextStyle(
-                                      color: Colors.grey[700],
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500),
-                                ),
+                              child: Text(
+                                formatTimestampSafe(groupByValue),
+                                style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500),
                               ),
                             ),
                             // itemCount: snapshot.data?.docs.length as int ,
