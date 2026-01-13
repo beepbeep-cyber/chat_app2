@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../configs/agora_configs.dart';
 import '../db/log_repository.dart';
 import '../models/log_model.dart';
@@ -238,8 +239,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       });
 
       // Update chat history for both users
+      final currentUser = FirebaseAuth.instance.currentUser;
+      
+      // Update callee's chat history (người nhận cuộc gọi)
       if (widget.calleeUid != null) {
-        // Update caller's chat history
         await firestore
             .collection('users')
             .doc(widget.calleeUid)
@@ -247,8 +250,24 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             .doc(widget.chatRoomId)
             .update({
           'lastMessage': callMessage,
-          'time': FieldValue.serverTimestamp(),
+          'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+          'timeStamp': FieldValue.serverTimestamp(),
           'isRead': false,
+        });
+      }
+      
+      // Update caller's chat history (người gọi - current user)
+      if (currentUser != null) {
+        await firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('chatHistory')
+            .doc(widget.chatRoomId)
+            .update({
+          'lastMessage': callMessage,
+          'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+          'timeStamp': FieldValue.serverTimestamp(),
+          'isRead': true, // Caller already knows about the call
         });
       }
 
