@@ -2473,7 +2473,3 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
     );
   }
 }
-
-    );
-  }
-}
