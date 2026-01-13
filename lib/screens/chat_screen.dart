@@ -606,17 +606,6 @@ class _ChatScreenState extends State<ChatScreen> {
           });
         }
       }
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Photo sent successfully!'),
-              ],
-            ),
-            backgroundColor: Colors.green[700],
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
     } catch (e) {
       // Close loading dialog if open
       if (mounted && Navigator.canPop(context)) {
