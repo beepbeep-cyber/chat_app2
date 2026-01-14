@@ -1026,9 +1026,31 @@ class _ChatScreenState extends State<ChatScreen> {
                             });
                           }
                           if (snapshot.data != null) {
+                            // FIX: Filter out messages with null timestamps AND sort by timestamp
+                            // This prevents stuck messages caused by null serverTimestamp
+                            final validDocs = snapshot.data!.docs.where((doc) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              return data['timeStamp'] != null;
+                            }).toList();
+                            
+                            // Sort by timeStamp to ensure correct order
+                            validDocs.sort((a, b) {
+                              final aData = a.data() as Map<String, dynamic>;
+                              final bData = b.data() as Map<String, dynamic>;
+                              
+                              final aTime = aData['timeStamp'] as Timestamp?;
+                              final bTime = bData['timeStamp'] as Timestamp?;
+                              
+                              if (aTime == null && bTime == null) return 0;
+                              if (aTime == null) return 1;
+                              if (bTime == null) return -1;
+                              
+                              return aTime.compareTo(bTime);
+                            });
+                            
                             return GroupedListView<
                                 QueryDocumentSnapshot<Object?>, String>(
-                              elements: snapshot.data?.docs
+                              elements: validDocs
                                   as List<QueryDocumentSnapshot<Object?>>,
                               shrinkWrap: true,
                               groupBy: (element) {
