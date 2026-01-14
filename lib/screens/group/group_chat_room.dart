@@ -261,7 +261,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         widget.groupChatId,
       );
       
-      final result = decryptedMessage ?? '[Unable to decrypt message]';
+      final result = decryptedMessage ?? '🔒 This message was encrypted and can no longer be decrypted';
       
       // Cache the result
       _decryptedMessagesCache[messageId] = result;
@@ -269,7 +269,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       return result;
     } catch (e) {
       if (kDebugMode) { debugPrint('Error decrypting message: $e'); }
-      return '[Decryption error]';
+      return '🔒 This message was encrypted and can no longer be decrypted';
     }
   }
 
@@ -798,8 +798,8 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                   ),
                   // Direct navigate to Group Info (no popup)
                   IconButton(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final newGroupName = await Navigator.push(
                         context,
                         SlideRightRoute(
                           page: GroupInfo(
@@ -811,6 +811,13 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                           ),
                         ),
                       );
+                      
+                      // Update group name if changed
+                      if (newGroupName != null && newGroupName != widget.groupName && mounted) {
+                        setState(() {
+                          widget.groupName = newGroupName;
+                        });
+                      }
                     },
                     icon: Icon(Icons.info_outline, color: AppTheme.gray700, size: 24),
                   ),

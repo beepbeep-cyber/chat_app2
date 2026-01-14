@@ -70,10 +70,11 @@ class AutoDeleteService {
     if (kDebugMode) {
       if (kDebugMode) { debugPrint('🗑️ [AutoDelete] Starting timer for $chatRoomId - Duration: $durationMinutes minutes'); }
       if (kDebugMode) { debugPrint('🗑️ [AutoDelete] Will check every 30 seconds for messages older than $durationMinutes minutes'); }
+      if (kDebugMode) { debugPrint('🗑️ [AutoDelete] 🔒 IMPORTANT: Only messages sent AFTER enabling auto-delete will be deleted!'); }
     }
 
-    // Chạy ngay lập tức lần đầu
-    _deleteOldMessages(chatRoomId, durationMinutes);
+    // 🔒 KHÔNG chạy ngay lập tức! Chỉ xóa tin nhắn MỚI sau khi enable
+    // Loại bỏ dòng này: _deleteOldMessages(chatRoomId, durationMinutes);
 
     // Thiết lập timer chạy định kỳ mỗi 30 giây để kiểm tra và xóa
     _activeTimers[chatRoomId] = Timer.periodic(

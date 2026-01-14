@@ -1819,7 +1819,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
-                          _formatTimestamp(map['time']),
+                          _formatTimestamp(map['timeStamp']),
                           style: TextStyle(
                             fontSize: 10,
                             color: Colors.grey[600],
@@ -1882,7 +1882,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
-                          _formatTimestamp(map['time']),
+                          _formatTimestamp(map['timeStamp']),
                           style: TextStyle(
                             fontSize: 10,
                             color: Colors.grey[600],

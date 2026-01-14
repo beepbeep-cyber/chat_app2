@@ -762,6 +762,9 @@ class _GroupInfoState extends State<GroupInfo> {
                       backgroundColor: AppTheme.success,
                     ),
                   );
+                  
+                  // Pop with new group name to update GroupChatRoom
+                  Navigator.pop(context, nameController.text.trim());
                 }
               } catch (e) {
                 setState(() {
