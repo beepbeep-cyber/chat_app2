@@ -358,8 +358,9 @@ class _SignUpScreen extends State<SignUp> {
                                             ),
                                             hintText: "Name",
                                             hintStyle: const TextStyle(
-                                                color: Colors.black54,
+                                                color: Colors.black87,
                                                 fontSize: 16,
+                                                fontWeight: FontWeight.w500,
                                             ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
@@ -386,8 +387,9 @@ class _SignUpScreen extends State<SignUp> {
                                             ),
                                             hintText: "Email",
                                             hintStyle: const TextStyle(
-                                                color: Colors.black54,
+                                                color: Colors.black87,
                                                 fontSize: 16,
+                                                fontWeight: FontWeight.w500,
                                             ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
@@ -415,8 +417,9 @@ class _SignUpScreen extends State<SignUp> {
                                             ),
                                             hintText: "Password",
                                             hintStyle: const TextStyle(
-                                                color: Colors.black54,
+                                                color: Colors.black87,
                                                 fontSize: 16,
+                                                fontWeight: FontWeight.w500,
                                             ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
@@ -458,8 +461,9 @@ class _SignUpScreen extends State<SignUp> {
                                             ),
                                             hintText: "Confirm Password",
                                             hintStyle: const TextStyle(
-                                                color: Colors.black54,
+                                                color: Colors.black87,
                                                 fontSize: 16,
+                                                fontWeight: FontWeight.w500,
                                             ),
                                             border: OutlineInputBorder(
                                                 borderRadius:

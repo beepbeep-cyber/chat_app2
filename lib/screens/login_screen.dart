@@ -345,8 +345,9 @@ class LoginPage extends State<Login> {
                                             prefixIcon: const Icon(Icons.email),
                                             hintText: "Email",
                                             hintStyle: const TextStyle(
-                                                color: Colors.black54,
+                                                color: Colors.black87,
                                                 fontSize: 16,
+                                                fontWeight: FontWeight.w500,
                                             ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
@@ -382,8 +383,9 @@ class LoginPage extends State<Login> {
                                             ),
                                             hintText: "Password",
                                             hintStyle: const TextStyle(
-                                                color: Colors.black54,
+                                                color: Colors.black87,
                                                 fontSize: 16,
+                                                fontWeight: FontWeight.w500,
                                             ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
