@@ -1005,9 +1005,9 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                     maxLines: null,
                                     style: TextStyle(
                                       fontSize: 16, 
-                                      color: Colors.grey[900], // Fixed: Use solid color instead of transparent
+                                      color: Colors.black, // Bold, clear text
                                       height: 1.5,
-                                      fontWeight: FontWeight.w400,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                     decoration: InputDecoration(
                                       hintText: 'Nhập tin nhắn...',

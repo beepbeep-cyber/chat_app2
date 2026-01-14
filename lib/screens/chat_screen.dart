@@ -1195,10 +1195,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                             maxLines: null,
                                             textInputAction: TextInputAction.newline,
                                             style: TextStyle(
-                                              color: Colors.grey[900],
+                                              color: Colors.black,
                                               fontSize: 16,
                                               height: 1.5,
-                                              fontWeight: FontWeight.w400,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                             decoration: InputDecoration(
                                               hintText: "Nhập tin nhắn...",

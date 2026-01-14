@@ -349,6 +349,11 @@ class _SignUpScreen extends State<SignUp> {
                                       width: 320,
                                       margin: const EdgeInsets.only(bottom: 5),
                                       child: TextFormField(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                         decoration: InputDecoration(
                                             prefixIcon: const Padding(
                                               padding:
@@ -378,6 +383,11 @@ class _SignUpScreen extends State<SignUp> {
                                       width: 320,
                                       margin: const EdgeInsets.all(5.0),
                                       child: TextFormField(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                         decoration: InputDecoration(
                                             prefixIcon: const Padding(
                                               padding:
@@ -407,6 +417,11 @@ class _SignUpScreen extends State<SignUp> {
                                       width: 320,
                                       margin: const EdgeInsets.all(5.0),
                                       child: TextFormField(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                         obscureText: _isVisible ? false : true,
                                         decoration: InputDecoration(
                                             prefixIcon: const Padding(
@@ -451,6 +466,11 @@ class _SignUpScreen extends State<SignUp> {
                                       width: 320,
                                       margin: const EdgeInsets.all(5.0),
                                       child: TextFormField(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                         obscureText: _isVisible ? false : true,
                                         decoration: InputDecoration(
                                             prefixIcon: const Padding(

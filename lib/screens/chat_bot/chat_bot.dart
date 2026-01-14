@@ -770,6 +770,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                     Expanded(
                       child: TextField(
                         controller: _message,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: null,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _sendMessage(),

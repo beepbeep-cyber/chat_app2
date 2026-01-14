@@ -341,6 +341,11 @@ class LoginPage extends State<Login> {
                                       width: 320,
                                       margin: const EdgeInsets.all(10.0),
                                       child: TextFormField(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                         decoration: InputDecoration(
                                             prefixIcon: const Icon(Icons.email),
                                             hintText: "Email",
@@ -373,6 +378,11 @@ class LoginPage extends State<Login> {
                                       width: 320,
                                       margin: const EdgeInsets.all(5.0),
                                       child: TextFormField(
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                         obscureText: _isVisible ? false : true,
                                         decoration: InputDecoration(
                                             prefixIcon: const Padding(
