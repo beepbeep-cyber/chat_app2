@@ -31,6 +31,7 @@ class IncomingCallService {
     }
 
     // Listen cho incoming calls của user hiện tại
+    // CRITICAL: Only listen for calls WHERE I am the CALLEE (not caller!)
     _callSubscription = _firestore
         .collection('incomingCalls')
         .where('calleeUid', isEqualTo: currentUser.uid)
@@ -52,12 +53,24 @@ class IncomingCallService {
           if (doc.type == DocumentChangeType.added) {
             // Có cuộc gọi mới đến!
             final callData = doc.doc.data() as Map<String, dynamic>;
+            final callerUid = callData['callerUid'] as String?;
+            
+            // CRITICAL: Double-check that I am NOT the caller!
+            // This prevents caller from receiving their own call notification
+            if (callerUid == currentUser.uid) {
+              if (kDebugMode) {
+                debugPrint('⚠️ [IncomingCall] Ignoring own call - I am the caller!');
+              }
+              continue; // Skip this document
+            }
+            
             callData['callId'] = doc.doc.id; // Thêm callId để cleanup sau
             
             if (kDebugMode) {
               debugPrint('📞 [IncomingCall] NEW CALL DETECTED!');
               debugPrint('   Caller: ${callData['callerName']}');
-              debugPrint('   CallerUid: ${callData['callerUid']}');
+              debugPrint('   CallerUid: $callerUid');
+              debugPrint('   CalleeUid: ${callData['calleeUid']}');
               debugPrint('   CallId: ${doc.doc.id}');
               debugPrint('   ChannelName: ${callData['channelName']}');
             }

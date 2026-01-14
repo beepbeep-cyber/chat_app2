@@ -256,9 +256,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           onTap: () async {
                             if (!mounted) return;
                             Navigator.pop(dialogContext); // Close dialog with dialog context
+                            
+                            // Update status to rejected
                             await IncomingCallService.rejectCall(callId);
+                            
+                            // CRITICAL: Cleanup document immediately!
+                            await IncomingCallService.cleanupCall(callId);
+                            
                             if (kDebugMode) {
                               debugPrint('❌ [HomeScreen] Call rejected');
+                              debugPrint('🧹 [HomeScreen] Call document cleaned up: $callId');
                             }
                           },
                           child: const Row(
@@ -311,11 +318,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             if (!mounted) return;
                             Navigator.pop(dialogContext); // Use dialog context to close
                             
-                            // Update call status
+                            // Update call status to accepted
                             await IncomingCallService.acceptCall(callId);
+                            
+                            // CRITICAL: Cleanup document immediately to prevent re-triggering!
+                            // This prevents the caller from receiving the call notification
+                            await IncomingCallService.cleanupCall(callId);
                             
                             if (kDebugMode) {
                               debugPrint('✅ [HomeScreen] Call accepted, joining channel: $channelName');
+                              debugPrint('🧹 [HomeScreen] Call document cleaned up: $callId');
                             }
                             
                             // CRITICAL: Check if widget is still mounted before navigating
