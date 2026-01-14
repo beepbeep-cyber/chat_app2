@@ -2354,6 +2354,8 @@ class _ChatScreenState extends State<ChatScreen> {
         'uid': widget.userMap['uid'],
         'avatar': widget.userMap['avatar'] ?? '',
         'datatype': 'p2p',
+        'isRead': true, // Sender has seen the message
+        'lastMessage': '📁 $fileName',
       }, SetOptions(merge: true));
 
       // Update chat history for recipient
@@ -2369,6 +2371,8 @@ class _ChatScreenState extends State<ChatScreen> {
         'uid': widget.user.uid,
         'avatar': widget.user.photoURL ?? '',
         'datatype': 'p2p',
+        'isRead': false, // Recipient hasn't seen yet
+        'lastMessage': '📁 $fileName',
       }, SetOptions(merge: true));
 
       debugPrint('✅ ChatScreen: File message sent successfully');
@@ -2426,6 +2430,8 @@ class _ChatScreenState extends State<ChatScreen> {
         'uid': widget.userMap['uid'],
         'avatar': widget.userMap['avatar'] ?? '',
         'datatype': 'p2p',
+        'isRead': true, // Sender has seen
+        'lastMessage': '🎤 Tin nhắn thoại',
       }, SetOptions(merge: true));
 
       // Update chat history for recipient
@@ -2436,6 +2442,8 @@ class _ChatScreenState extends State<ChatScreen> {
         'uid': _auth.currentUser!.uid,
         'avatar': widget.user.photoURL ?? '',
         'datatype': 'p2p',
+        'isRead': false, // Recipient hasn't seen yet
+        'lastMessage': '🎤 Tin nhắn thoại',
       }, SetOptions(merge: true));
 
       if (kDebugMode) { debugPrint('✅ [ChatScreen] Voice message sent successfully'); }
