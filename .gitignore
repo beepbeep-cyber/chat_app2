@@ -43,6 +43,22 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Web platform (not used - mobile only)
+/web/
+build/web/
+.firebaserc
+firebase.json
+firebase_functions/
+
+# Backup files
+*.backup
+*.original
+*.old
+
+# Server logs
+server.log
+flutter_build.log
+
 # NOTE: dialog_flow_auth.json is REQUIRED for DialogFlow AI chatbot feature
 # The file must be included in assets/ for the app to work properly
 # DO NOT ignore this file - it's needed for the app to function
