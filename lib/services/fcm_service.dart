@@ -30,8 +30,8 @@ class FCMService {
   // Android notification channel
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'high_importance_channel',
-    'High Importance Notifications',
-    description: 'This channel is used for important notifications.',
+    'Thông báo quan trọng',
+    description: 'Kênh này dùng cho thông báo quan trọng.',
     importance: Importance.high,
     playSound: true,
     enableVibration: true,
@@ -183,7 +183,7 @@ class FCMService {
     if (notification != null) {
       await _localNotifications.show(
         notification.hashCode,
-        notification.title ?? 'New Message',
+        notification.title ?? 'Tin nhắn mới',
         notification.body ?? '',
         NotificationDetails(
           android: AndroidNotificationDetails(

@@ -590,7 +590,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Voice unavailable',
+                'Tin nhắn thoại không khả dụng',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppTheme.error,
@@ -599,7 +599,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer>
               ),
               const SizedBox(height: 2),
               Text(
-                'Tap to retry',
+                'Nhấn để thử lại',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.red[400],

@@ -55,7 +55,7 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('User "$targetName" not found'),
+              content: Text('Không tìm thấy người dùng "$targetName"'),
               backgroundColor: AppTheme.error,
               behavior: SnackBarBehavior.floating,
             ),
@@ -74,7 +74,7 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Please login to make calls'),
+              content: Text('Vui lòng đăng nhập để gọi'),
               backgroundColor: AppTheme.error,
               behavior: SnackBarBehavior.floating,
             ),
@@ -108,7 +108,7 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to make call: $e'),
+            content: Text('Gọi thất bại: $e'),
             backgroundColor: AppTheme.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -126,10 +126,10 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
           children: [
             Icon(Icons.wifi_off, color: AppTheme.gray700, size: 28),
             const SizedBox(width: 12),
-            const Text('No Connection'),
+            const Text('Không có kết nối'),
           ],
         ),
-        content: const Text('Please check your internet connection and try again.'),
+        content: const Text('Vui lòng kiểm tra kết nối internet và thử lại.'),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
@@ -224,11 +224,11 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                   child: Icon(Icons.videocam, color: AppTheme.success, size: 22),
                 ),
                 title: const Text(
-                  'Video Call',
+                  'Cuộc gọi video',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
-                  'Start a video call with $targetName',
+                  'Bắt đầu cuộc gọi video với $targetName',
                   style: TextStyle(color: AppTheme.gray600, fontSize: 13),
                 ),
                 onTap: () {
@@ -247,14 +247,14 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                   child: Icon(Icons.delete_outline, color: AppTheme.error, size: 22),
                 ),
                 title: Text(
-                  'Delete',
+                  'Xóa',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     color: AppTheme.error,
                   ),
                 ),
                 subtitle: Text(
-                  'Remove this call from history',
+                  'Xóa cuộc gọi khỏi lịch sử',
                   style: TextStyle(color: AppTheme.gray600, fontSize: 13),
                 ),
                 onTap: () async {
@@ -264,7 +264,7 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                     setState(() {});
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('Call log deleted'),
+                        content: const Text('Đã xóa lịch sử cuộc gọi'),
                         backgroundColor: AppTheme.success,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -474,7 +474,7 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'No Call Logs',
+                      'Chưa có cuộc gọi',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -483,7 +483,7 @@ class _CallLogListContainerState extends State<CallLogListContainer> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Your call history will appear here',
+                      'Lịch sử cuộc gọi sẽ hiển thị ở đây',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.gray600,

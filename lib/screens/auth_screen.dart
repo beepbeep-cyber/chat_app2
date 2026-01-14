@@ -20,25 +20,25 @@ class AuthResult {
 String getAuthErrorMessage(FirebaseAuthException e) {
   switch (e.code) {
     case 'user-not-found':
-      return 'No account found with this email. Please sign up first.';
+      return 'Không tìm thấy tài khoản với email này. Vui lòng đăng ký trước.';
     case 'wrong-password':
-      return 'Incorrect password. Please try again.';
+      return 'Mật khẩu không đúng. Vui lòng thử lại.';
     case 'email-already-in-use':
-      return 'This email is already registered. Please login instead.';
+      return 'Email này đã được đăng ký. Vui lòng đăng nhập.';
     case 'invalid-email':
-      return 'Invalid email format. Please check and try again.';
+      return 'Định dạng email không hợp lệ. Vui lòng kiểm tra và thử lại.';
     case 'weak-password':
-      return 'Password is too weak. Use at least 6 characters.';
+      return 'Mật khẩu quá yếu. Sử dụng ít nhất 6 ký tự.';
     case 'user-disabled':
-      return 'This account has been disabled. Please contact support.';
+      return 'Tài khoản này đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.';
     case 'too-many-requests':
-      return 'Too many failed attempts. Please try again later.';
+      return 'Quá nhiều lần thất bại. Vui lòng thử lại sau.';
     case 'operation-not-allowed':
-      return 'Email/password accounts are not enabled. Please contact support.';
+      return 'Tài khoản email/mật khẩu chưa được bật. Vui lòng liên hệ hỗ trợ.';
     case 'invalid-credential':
-      return 'Invalid credentials. Please check your email and password.';
+      return 'Thông tin đăng nhập không hợp lệ. Vui lòng kiểm tra email và mật khẩu.';
     case 'network-request-failed':
-      return 'Network error. Please check your internet connection.';
+      return 'Lỗi mạng. Vui lòng kiểm tra kết nối internet.';
     default:
       return e.message ?? 'An error occurred. Please try again.';
   }

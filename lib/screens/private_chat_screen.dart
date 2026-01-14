@@ -857,7 +857,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               onPressed: () async {
                 if (newController.text != confirmController.text) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('New passwords do not match')),
+                    const SnackBar(content: Text('Mật khẩu mới không khớp')),
                   );
                   return;
                 }

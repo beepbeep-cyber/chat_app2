@@ -208,10 +208,10 @@ class VideoCallMessageWidget extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         isMissedCall
-                            ? 'Tap to call back'
+                            ? 'Nhấn để gọi lại'
                             : callDuration.isNotEmpty
                                 ? callDuration
-                                : 'Ended',
+                                : 'Đã kết thúc',
                         style: TextStyle(
                           fontSize: 12,
                           color: _getSubtextColor(),
@@ -318,7 +318,7 @@ class VideoCallMessageWidget extends StatelessWidget {
     if (isMissedCall) {
       return 'Cuộc gọi video nhở';
     }
-    return 'Video Call';
+    return 'Cuộc gọi video';
   }
 
   Color _getTextColor() {

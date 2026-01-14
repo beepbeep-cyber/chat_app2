@@ -199,8 +199,8 @@ class _ConversationListState extends State<ConversationList>
               _buildOptionTile(
                 icon: Icons.lock_outline,
                 iconColor: AppTheme.accent,
-                title: 'Move to Private',
-                subtitle: 'Protect this chat with password',
+                title: 'Chuyển sang Riêng tư',
+                subtitle: 'Bảo vệ cuộc trò chuyện bằng mật khẩu',
                 onTap: () async {
                   Navigator.pop(context);
                   await _moveToPrivate();
@@ -210,8 +210,8 @@ class _ConversationListState extends State<ConversationList>
               _buildOptionTile(
                 icon: Icons.delete_outline,
                 iconColor: AppTheme.error,
-                title: 'Delete Chat',
-                subtitle: 'Remove from your chat list',
+                title: 'Xóa cuộc trò chuyện',
+                subtitle: 'Xóa khỏi danh sách trò chuyện',
                 isDestructive: true,
                 onTap: () {
                   Navigator.pop(context);
@@ -273,7 +273,7 @@ class _ConversationListState extends State<ConversationList>
             children: [
               Icon(Icons.lock, color: Colors.white, size: 20),
               SizedBox(width: 12),
-              Text('Chat moved to Private'),
+              Text('Đã chuyển sang Riêng tư'),
             ],
           ),
           backgroundColor: AppTheme.accent,
@@ -300,7 +300,7 @@ class _ConversationListState extends State<ConversationList>
               child: Icon(Icons.delete_outline, color: AppTheme.error, size: 24),
             ),
             const SizedBox(width: 12),
-            const Text('Delete Chat'),
+            const Text('Xóa cuộc trò chuyện'),
           ],
         ),
         content: Text(

@@ -57,7 +57,7 @@ class BiometricAuthService {
   /// Authenticate using biometric or device credentials
   /// Returns true if authentication successful, false otherwise
   Future<bool> authenticate({
-    String localizedReason = 'Please authenticate to access the app',
+    String localizedReason = 'Vui lòng xác thực để truy cập ứng dụng',
     bool biometricOnly = false,
   }) async {
     if (kDebugMode) { debugPrint('🔐 [BiometricService] authenticate() called'); }
@@ -176,15 +176,15 @@ class BiometricAuthService {
   String getBiometricTypeName(BiometricType type) {
     switch (type) {
       case BiometricType.face:
-        return 'Face Recognition';
+        return 'Nhận diện khuôn mặt';
       case BiometricType.fingerprint:
-        return 'Fingerprint';
+        return 'Vân tay';
       case BiometricType.iris:
-        return 'Iris Scan';
+        return 'Quét mống mắt';
       case BiometricType.strong:
-        return 'Strong Biometric';
+        return 'Sinh trắc học mạnh';
       case BiometricType.weak:
-        return 'Weak Biometric';
+        return 'Sinh trắc học yếu';
     }
   }
 
@@ -193,18 +193,18 @@ class BiometricAuthService {
     final biometrics = await getAvailableBiometrics();
     
     if (biometrics.isEmpty) {
-      return 'Please authenticate to continue';
+      return 'Vui lòng xác thực để tiếp tục';
     }
     
     if (biometrics.contains(BiometricType.face)) {
-      return 'Scan your face to unlock';
+      return 'Quét khuôn mặt để mở khóa';
     }
     
     if (biometrics.contains(BiometricType.fingerprint)) {
-      return 'Touch fingerprint sensor to unlock';
+      return 'Chạm cảm biến vân tay để mở khóa';
     }
     
-    return 'Use biometric authentication to unlock';
+    return 'Sử dụng sinh trắc học để mở khóa';
   }
 
   /// Stop authentication (cancel ongoing authentication)

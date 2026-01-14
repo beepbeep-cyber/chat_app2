@@ -94,7 +94,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 const Icon(Icons.email, color: Colors.white),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text('Verification email sent to ${widget.email}'),
+                  child: Text('Đã gửi email xác thực đến ${widget.email}'),
                 ),
               ],
             ),
@@ -111,7 +111,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             children: [
               const Icon(Icons.error, color: Colors.white),
               const SizedBox(width: 12),
-              const Expanded(child: Text('Failed to send verification email')),
+              const Expanded(child: Text('Gửi email xác thực thất bại')),
             ],
           ),
           backgroundColor: AppTheme.error,

@@ -93,7 +93,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
         } else {
           if (kDebugMode) { debugPrint('❌ [BiometricLockScreen] Authentication failed'); }
           setState(() {
-            _errorMessage = 'Authentication failed. Please try again.';
+            _errorMessage = 'Xác thực thất bại. Vui lòng thử lại.';
             _isAuthenticating = false;
           });
         }
@@ -102,7 +102,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
       if (kDebugMode) { debugPrint('❌ [BiometricLockScreen] Error: $e'); }
       if (mounted) {
         setState(() {
-          _errorMessage = 'An error occurred. Please try again.';
+          _errorMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';
           _isAuthenticating = false;
         });
       }
@@ -163,7 +163,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
 
                 // App Name
                 Text(
-                  'Secure Chat',
+                  'Trò chuyện bảo mật',
                   style: AppTheme.headlineLarge.copyWith(
                     color: AppTheme.textWhite,
                     letterSpacing: 1.2,
@@ -171,7 +171,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Private & Secure Messaging',
+                  'Nhắn tin riêng tư 'Private & Secure Messaging' bảo mật',
                   style: AppTheme.bodyMedium.copyWith(
                     color: AppTheme.textHint,
                     letterSpacing: 0.5,
@@ -220,8 +220,8 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
                     _isAuthenticating
-                        ? 'Please authenticate to unlock'
-                        : 'Tap the button below to authenticate',
+                        ? 'Vui lòng xác thực để mở khóa'
+                        : 'Nhấn nút bên dưới để xác thực',
                     textAlign: TextAlign.center,
                     style: AppTheme.bodyMedium.copyWith(
                       color: AppTheme.textHint,
@@ -282,7 +282,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
                     ),
                     icon: Icon(_getBiometricIcon(), size: 24),
                     label: const Text(
-                      'Unlock',
+                      'Mở khóa',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
