@@ -281,18 +281,23 @@ class _SettingState extends State<Setting> {
               // Close dialog first
               Navigator.pop(dialogContext);
               
-              // Perform logout operations
-              await turnOffStatus();
-              await logOut();
-              
-              // Use root navigator context for navigation after logout
-              // This avoids the deactivated widget ancestor issue
+              // Navigate to login screen IMMEDIATELY (no waiting for async operations)
+              // This prevents showing old screen during logout operations
               if (dialogContext.mounted) {
                 Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
                   SlideRightRoute(page: Login()),
                   (Route<dynamic> route) => false,
                 );
               }
+              
+              // Perform logout operations in background AFTER navigation
+              // User sees login screen immediately while cleanup happens
+              await turnOffStatus().catchError((e) {
+                if (kDebugMode) { debugPrint('❌ turnOffStatus error: $e'); }
+              });
+              await logOut().catchError((e) {
+                if (kDebugMode) { debugPrint('❌ logOut error: $e'); }
+              });
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.error,
