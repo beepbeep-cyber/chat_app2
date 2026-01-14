@@ -57,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeApp();
-    _initializeIncomingCallListener();
   }
 
   void _initializeApp() async {
@@ -72,6 +71,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     LogRepository.init(dbName: _auth.currentUser!.uid);
     _getConnectivity();
+    
+    // 🔔 CRITICAL: Start listening for incoming calls AFTER initialization
+    // Must wait for Firebase Auth to be ready!
+    await Future.delayed(const Duration(milliseconds: 500)); // Small delay to ensure auth is ready
+    _initializeIncomingCallListener();
   }
 
   /// Initialize incoming call listener (NO FCM REQUIRED!)
@@ -80,6 +84,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     
     // Set callback để show dialog khi có cuộc gọi đến
     callService.onIncomingCall = (callData) {
+      if (kDebugMode) {
+        debugPrint('📞 [HomeScreen] Incoming call callback triggered!');
+        debugPrint('   Caller: ${callData['callerName']}');
+        debugPrint('   CallId: ${callData['callId']}');
+      }
       _showIncomingCallDialog(callData);
     };
     

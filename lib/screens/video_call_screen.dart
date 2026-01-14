@@ -125,6 +125,11 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   /// Uses Firestore realtime listener instead
   Future<void> _sendCallNotification() async {
     try {
+      debugPrint('🔔 [VideoCall] Preparing to send call notification...');
+      debugPrint('   CalleeUid: ${widget.calleeUid}');
+      debugPrint('   CallerName: ${widget.userName}');
+      debugPrint('   ChannelName: ${widget.channelName}');
+      
       final callId = await IncomingCallService.sendCall(
         calleeUid: widget.calleeUid!,
         callerName: widget.userName,
@@ -135,10 +140,15 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       
       if (callId != null) {
         _currentCallId = callId;
-        debugPrint('✅ [VideoCall] Call notification sent (Firestore), callId: $callId');
+        debugPrint('✅ [VideoCall] Call notification sent successfully!');
+        debugPrint('   CallId: $callId');
+        debugPrint('   Document created in: incomingCalls/$callId');
+      } else {
+        debugPrint('❌ [VideoCall] Call notification returned NULL callId!');
       }
     } catch (e) {
       debugPrint('❌ [VideoCall] Failed to send notification: $e');
+      debugPrint('   Stack trace: ${StackTrace.current}');
     }
   }
 

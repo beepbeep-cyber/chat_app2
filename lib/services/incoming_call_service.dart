@@ -26,33 +26,70 @@ class IncomingCallService {
       return;
     }
 
+    if (kDebugMode) {
+      debugPrint('🔄 [IncomingCall] Starting listener for user: ${currentUser.uid}');
+    }
+
     // Listen cho incoming calls của user hiện tại
     _callSubscription = _firestore
         .collection('incomingCalls')
         .where('calleeUid', isEqualTo: currentUser.uid)
         .where('status', isEqualTo: 'calling')
         .snapshots()
-        .listen((snapshot) {
-      for (var doc in snapshot.docChanges) {
-        if (doc.type == DocumentChangeType.added) {
-          // Có cuộc gọi mới đến!
-          final callData = doc.doc.data() as Map<String, dynamic>;
-          callData['callId'] = doc.doc.id; // Thêm callId để cleanup sau
-          
+        .listen(
+      (snapshot) {
+        if (kDebugMode) {
+          debugPrint('📊 [IncomingCall] Snapshot received: ${snapshot.docs.length} documents');
+          debugPrint('   DocChanges: ${snapshot.docChanges.length}');
+        }
+        
+        for (var doc in snapshot.docChanges) {
           if (kDebugMode) {
-            debugPrint('📞 [IncomingCall] New call from: ${callData['callerName']}');
+            debugPrint('   Change type: ${doc.type}');
+            debugPrint('   Document ID: ${doc.doc.id}');
           }
           
-          // Trigger callback để show dialog
-          if (onIncomingCall != null) {
-            onIncomingCall!(callData);
+          if (doc.type == DocumentChangeType.added) {
+            // Có cuộc gọi mới đến!
+            final callData = doc.doc.data() as Map<String, dynamic>;
+            callData['callId'] = doc.doc.id; // Thêm callId để cleanup sau
+            
+            if (kDebugMode) {
+              debugPrint('📞 [IncomingCall] NEW CALL DETECTED!');
+              debugPrint('   Caller: ${callData['callerName']}');
+              debugPrint('   CallerUid: ${callData['callerUid']}');
+              debugPrint('   CallId: ${doc.doc.id}');
+              debugPrint('   ChannelName: ${callData['channelName']}');
+            }
+            
+            // Trigger callback để show dialog
+            if (onIncomingCall != null) {
+              if (kDebugMode) {
+                debugPrint('✅ [IncomingCall] Triggering onIncomingCall callback');
+              }
+              onIncomingCall!(callData);
+            } else {
+              if (kDebugMode) {
+                debugPrint('❌ [IncomingCall] onIncomingCall callback is NULL!');
+              }
+            }
           }
         }
-      }
-    });
+      },
+      onError: (error) {
+        if (kDebugMode) {
+          debugPrint('❌ [IncomingCall] Listener error: $error');
+        }
+      },
+      onDone: () {
+        if (kDebugMode) {
+          debugPrint('⏹️ [IncomingCall] Listener closed');
+        }
+      },
+    );
 
     if (kDebugMode) {
-      debugPrint('✅ [IncomingCall] Started listening for user: ${currentUser.uid}');
+      debugPrint('✅ [IncomingCall] Listener started successfully');
     }
   }
 
@@ -75,7 +112,20 @@ class IncomingCallService {
   }) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return null;
+      if (currentUser == null) {
+        if (kDebugMode) {
+          debugPrint('❌ [IncomingCall] sendCall: No user logged in');
+        }
+        return null;
+      }
+
+      if (kDebugMode) {
+        debugPrint('📤 [IncomingCall] Sending call...');
+        debugPrint('   From: ${currentUser.uid}');
+        debugPrint('   To: $calleeUid');
+        debugPrint('   CallerName: $callerName');
+        debugPrint('   ChannelName: $channelName');
+      }
 
       // Tạo document trong collection "incomingCalls"
       final docRef = await FirebaseFirestore.instance
@@ -93,13 +143,17 @@ class IncomingCallService {
       });
 
       if (kDebugMode) {
-        debugPrint('✅ [IncomingCall] Call sent to $calleeUid, callId: ${docRef.id}');
+        debugPrint('✅ [IncomingCall] Document created successfully!');
+        debugPrint('   CallId: ${docRef.id}');
+        debugPrint('   Path: incomingCalls/${docRef.id}');
+        debugPrint('   Status: calling');
       }
 
       return docRef.id;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [IncomingCall] Send call error: $e');
+        debugPrint('   Stack: ${StackTrace.current}');
       }
       return null;
     }
