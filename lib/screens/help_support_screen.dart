@@ -21,7 +21,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   Future<void> _loadAppVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();
     setState(() {
-      _appVersion = '${packageInfo.version} (${packageInfo.buildNumber})';
+      _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
     });
   }
 
@@ -784,25 +784,25 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             _buildContactCard(
               icon: Icons.email,
               title: 'Email',
-              value: 'support@chatapp.com',
+              value: 'blequyet1906@gmail.com',
               color: Colors.red,
-              onTap: () => _launchUrl('mailto:support@chatapp.com'),
+              onTap: () => _launchUrl('mailto:blequyet1906@gmail.com'),
             ),
             const SizedBox(height: 12),
             _buildContactCard(
               icon: Icons.telegram,
               title: 'Telegram',
-              value: '@chatapp_support',
+              value: '@lequyet',
               color: Colors.blue,
-              onTap: () => _launchUrl('https://t.me/chatapp_support'),
+              onTap: () => _launchUrl('https://t.me/lequyet'),
             ),
             const SizedBox(height: 12),
             _buildContactCard(
               icon: Icons.phone,
               title: 'Hotline (24/7)',
-              value: '1900-xxxx',
+              value: '0988770211',
               color: Colors.green,
-              onTap: () => _launchUrl('tel:1900xxxx'),
+              onTap: () => _launchUrl('tel:0988770211'),
             ),
             const SizedBox(height: 24),
           ],
@@ -1109,11 +1109,17 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.star, color: Colors.amber),
-              SizedBox(width: 12),
-              Text('Đánh giá ứng dụng'),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Đánh giá ứng dụng',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           content: Column(
@@ -1125,18 +1131,23 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    onPressed: () => setState(() => rating = index + 1),
-                    icon: Icon(
-                      index < rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
-                      size: 40,
-                    ),
-                  );
-                }),
+              SizedBox(
+                width: double.maxFinite,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      padding: EdgeInsets.all(4),
+                      constraints: BoxConstraints(),
+                      onPressed: () => setState(() => rating = index + 1),
+                      icon: Icon(
+                        index < rating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 36,
+                      ),
+                    );
+                  }),
+                ),
               ),
               if (rating > 0) ...[
                 const SizedBox(height: 12),
