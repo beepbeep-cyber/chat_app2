@@ -171,7 +171,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Nhắn tin riêng tư 'Private & Secure Messaging' bảo mật',
+                  'Nhắn tin riêng tư & bảo mật',
                   style: AppTheme.bodyMedium.copyWith(
                     color: AppTheme.textHint,
                     letterSpacing: 0.5,
