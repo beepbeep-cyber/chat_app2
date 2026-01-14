@@ -218,6 +218,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       debugPrint('📞 VideoCall: Sending call message - userName: ${widget.userName}, calleeName: ${widget.calleeName}');
 
       // Add call message to chat
+      // FIX: Use client timestamp to prevent message stuck at bottom
+      final now = DateTime.now();
       await firestore
           .collection('chatroom')
           .doc(widget.chatRoomId)
@@ -229,8 +231,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         'callStatus': callStatus,
         'callDuration': _callDuration,
         'timeSpend': _callDuration,
-        'time': DateTime.now().toString(), // For UI display compatibility
-        'timeStamp': FieldValue.serverTimestamp(),
+        'time': now.toString(), // For UI display compatibility
+        'timeStamp': Timestamp.fromDate(now), // Use client timestamp instead of serverTimestamp
       });
 
       // Update last message in chatroom
