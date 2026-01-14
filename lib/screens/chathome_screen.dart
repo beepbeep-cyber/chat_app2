@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Show incoming call dialog
+  /// Show incoming call dialog with beautiful UI
   void _showIncomingCallDialog(Map<String, dynamic> callData) {
     final String callerName = callData['callerName'] ?? 'Unknown';
     final String callerAvatar = callData['callerAvatar'] ?? '';
@@ -112,106 +112,261 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.video_call, color: Colors.green, size: 32),
-            SizedBox(width: 12),
-            Text('Cuộc gọi video đến'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Avatar
-            if (callerAvatar.isNotEmpty)
-              CircleAvatar(
-                radius: 40,
-                backgroundImage: NetworkImage(callerAvatar),
-              )
-            else
-              const CircleAvatar(
-                radius: 40,
-                child: Icon(Icons.person, size: 40),
+      barrierColor: Colors.black87,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF667eea),
+                Color(0xFF764ba2),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-            const SizedBox(height: 16),
-            // Caller name
-            Text(
-              callerName,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'đang gọi video cho bạn...',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          // Reject button
-          TextButton.icon(
-            onPressed: () async {
-              if (!mounted) return;
-              Navigator.pop(context);
-              await IncomingCallService.rejectCall(callId);
-              if (kDebugMode) {
-                debugPrint('❌ [HomeScreen] Call rejected');
-              }
-            },
-            icon: const Icon(Icons.call_end, color: Colors.red),
-            label: const Text(
-              'Từ chối',
-              style: TextStyle(color: Colors.red),
-            ),
+            ],
           ),
-          // Accept button
-          ElevatedButton.icon(
-            onPressed: () async {
-              // CRITICAL: Close dialog first
-              if (!mounted) return;
-              Navigator.pop(context);
-              
-              // Update call status
-              await IncomingCallService.acceptCall(callId);
-              
-              if (kDebugMode) {
-                debugPrint('✅ [HomeScreen] Call accepted, joining channel: $channelName');
-              }
-              
-              // CRITICAL: Check if widget is still mounted before navigating
-              if (!mounted) {
-                if (kDebugMode) {
-                  debugPrint('⚠️ [HomeScreen] Widget unmounted, cannot navigate');
-                }
-                return;
-              }
-              
-              // Navigate to VideoCallScreen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VideoCallScreen(
-                    channelName: channelName,
-                    userName: _auth.currentUser?.displayName ?? 'Me',
-                    userAvatar: _auth.currentUser?.photoURL,
-                    calleeName: callerName,
-                    calleeAvatar: callerAvatar,
-                    chatRoomId: chatRoomId,
-                    calleeUid: callerUid,
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Video call icon with animation
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
                 ),
-              );
-            },
-            icon: const Icon(Icons.video_call),
-            label: const Text('Trả lời'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
+                child: const Icon(
+                  Icons.video_call,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Title
+              const Text(
+                'Cuộc gọi video đến',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Caller Avatar with border and shadow
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: callerAvatar.isNotEmpty
+                    ? CircleAvatar(
+                        radius: 50,
+                        backgroundImage: NetworkImage(callerAvatar),
+                        backgroundColor: Colors.white,
+                      )
+                    : const CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.white,
+                        child: Icon(
+                          Icons.person,
+                          size: 50,
+                          color: Color(0xFF667eea),
+                        ),
+                      ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Caller name
+              Text(
+                callerName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Calling text with animation dots
+              const Text(
+                'đang gọi cho bạn...',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // Action buttons - Big and beautiful
+              Row(
+                children: [
+                  // Reject button - Red
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade600,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () async {
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            await IncomingCallService.rejectCall(callId);
+                            if (kDebugMode) {
+                              debugPrint('❌ [HomeScreen] Call rejected');
+                            }
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.call_end,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Từ chối',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 16),
+                  
+                  // Accept button - Green
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade600,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () async {
+                            // CRITICAL: Close dialog first
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            
+                            // Update call status
+                            await IncomingCallService.acceptCall(callId);
+                            
+                            if (kDebugMode) {
+                              debugPrint('✅ [HomeScreen] Call accepted, joining channel: $channelName');
+                            }
+                            
+                            // CRITICAL: Check if widget is still mounted before navigating
+                            if (!mounted) {
+                              if (kDebugMode) {
+                                debugPrint('⚠️ [HomeScreen] Widget unmounted, cannot navigate');
+                              }
+                              return;
+                            }
+                            
+                            // Navigate to VideoCallScreen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => VideoCallScreen(
+                                  channelName: channelName,
+                                  userName: _auth.currentUser?.displayName ?? 'Me',
+                                  userAvatar: _auth.currentUser?.photoURL,
+                                  calleeName: callerName,
+                                  calleeAvatar: callerAvatar,
+                                  chatRoomId: chatRoomId,
+                                  calleeUid: callerUid,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.video_call,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Trả lời',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
