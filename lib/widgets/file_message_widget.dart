@@ -42,8 +42,31 @@ class FileMessageWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isMe ? AppTheme.gray800 : AppTheme.primaryDark,
+          gradient: isMe 
+              ? LinearGradient(
+                  colors: [
+                    Colors.blue.shade700,
+                    Colors.blue.shade600,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : LinearGradient(
+                  colors: [
+                    AppTheme.primaryDark,
+                    AppTheme.primaryDark.withValues(alpha: 0.9),
+                  ],
+                ),
           borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: isMe 
+                  ? Colors.blue.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -53,7 +76,9 @@ class FileMessageWidget extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: isMe ? AppTheme.gray700 : AppTheme.gray800,
+                color: isMe 
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : AppTheme.gray800.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
@@ -102,8 +127,8 @@ class FileMessageWidget extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isMe 
-                              ? AppTheme.gray700?.withValues(alpha: 0.5)
-                              : AppTheme.gray800?.withValues(alpha: 0.5),
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : AppTheme.gray800.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

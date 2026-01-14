@@ -63,6 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
   late String email = widget.userMap['email'];
 
   bool isLoading = false;
+  String _loadingMessage = 'Sending photo'; // Dynamic loading message
 
   // Cache for decrypted messages to prevent re-decryption
   final Map<String, String> _decryptedMessagesCache = {};
@@ -457,6 +458,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future uploadImage() async {
     // Show loading indicator
     setState(() {
+      _loadingMessage = 'Sending photo';
       isLoading = true;
     });
 
@@ -597,6 +599,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Show loading overlay using isLoading state
       if (mounted) {
         setState(() {
+          _loadingMessage = 'Sending photo';
           isLoading = true;
         });
       }
@@ -1285,7 +1288,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'Sending photo',
+                              _loadingMessage, // Dynamic message
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -1808,25 +1811,32 @@ class _ChatScreenState extends State<ChatScreen> {
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.75,  // ✅ Max 75% screen width
                   ),
-                  child: Column(
-                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                    children: [
-                      VoiceMessagePlayer(
-                        audioUrl: map['message'],
-                        isMe: isMe,
-                      ),
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          _formatTimestamp(map['timeStamp']),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
+                  child: GestureDetector(
+                    onLongPress: () {
+                      if (isMe) {
+                        changeMessage(index, length, map['message'], map['type']);
+                      }
+                    },
+                    child: Column(
+                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        VoiceMessagePlayer(
+                          audioUrl: map['message'],
+                          isMe: isMe,
+                        ),
+                        const SizedBox(height: 4),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            _formatTimestamp(map['timeStamp']),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[600],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1868,28 +1878,35 @@ class _ChatScreenState extends State<ChatScreen> {
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.75, // 75% of screen width
                   ),
-                  child: Column(
-                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                    children: [
-                      FileMessageWidget(
-                        fileUrl: map['message'],
-                        fileName: map['fileName'] ?? 'Unknown file',
-                        fileSize: map['fileSize'] ?? 0,
-                        fileExtension: map['fileExtension'] ?? 'bin',
-                        isMe: isMe,
-                      ),
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          _formatTimestamp(map['timeStamp']),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
+                  child: GestureDetector(
+                    onLongPress: () {
+                      if (isMe) {
+                        changeMessage(index, length, map['message'], map['type']);
+                      }
+                    },
+                    child: Column(
+                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        FileMessageWidget(
+                          fileUrl: map['message'],
+                          fileName: map['fileName'] ?? 'Unknown file',
+                          fileSize: map['fileSize'] ?? 0,
+                          fileExtension: map['fileExtension'] ?? 'bin',
+                          isMe: isMe,
+                        ),
+                        const SizedBox(height: 4),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            _formatTimestamp(map['timeStamp']),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[600],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -2215,6 +2232,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Show loading overlay using isLoading state
       if (mounted) {
         setState(() {
+          _loadingMessage = 'Sending file';
           isLoading = true;
         });
       }
@@ -2323,6 +2341,28 @@ class _ChatScreenState extends State<ChatScreen> {
         "last_chat": "📁 $fileName",
       });
 
+      // Update chat history for current user
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.user.uid)
+          .collection('chatHistory')
+          .doc(widget.userMap['uid'])
+          .update({
+        'recentMessage': '📁 $fileName',
+        'timeStamp': FieldValue.serverTimestamp(),
+      });
+
+      // Update chat history for recipient
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userMap['uid'])
+          .collection('chatHistory')
+          .doc(widget.user.uid)
+          .update({
+        'recentMessage': '📁 $fileName',
+        'timeStamp': FieldValue.serverTimestamp(),
+      });
+
       debugPrint('✅ ChatScreen: File message sent successfully');
     } catch (e) {
       debugPrint('❌ ChatScreen: Error sending file message: $e');
@@ -2352,6 +2392,7 @@ class _ChatScreenState extends State<ChatScreen> {
     
     try {
       setState(() {
+        _loadingMessage = 'Sending voice message';
         isLoading = true;
       });
 
