@@ -45,8 +45,8 @@ class FileMessageWidget extends StatelessWidget {
           gradient: isMe 
               ? LinearGradient(
                   colors: [
-                    Colors.blue.shade700,
-                    Colors.blue.shade600,
+                    Colors.green.shade700,
+                    Colors.green.shade600,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -61,7 +61,7 @@ class FileMessageWidget extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isMe 
-                  ? Colors.blue.withValues(alpha: 0.3)
+                  ? Colors.green.withValues(alpha: 0.3)
                   : Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),

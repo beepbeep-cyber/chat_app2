@@ -1256,14 +1256,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.blue.shade700.withValues(alpha: 0.98),
-                              Colors.blue.shade600.withValues(alpha: 0.98),
+                              Colors.green.shade700.withValues(alpha: 0.98),
+                              Colors.green.shade600.withValues(alpha: 0.98),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.blue.withValues(alpha: 0.5),
+                              color: Colors.green.withValues(alpha: 0.5),
                               blurRadius: 24,
                               spreadRadius: 4,
                               offset: const Offset(0, 8),
@@ -2347,10 +2347,14 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc(widget.user.uid)
           .collection('chatHistory')
           .doc(widget.userMap['uid'])
-          .update({
+          .set({
         'recentMessage': '📁 $fileName',
         'timeStamp': FieldValue.serverTimestamp(),
-      });
+        'name': widget.userMap['name'],
+        'uid': widget.userMap['uid'],
+        'avatar': widget.userMap['avatar'] ?? '',
+        'datatype': 'p2p',
+      }, SetOptions(merge: true));
 
       // Update chat history for recipient
       await FirebaseFirestore.instance
@@ -2358,10 +2362,14 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc(widget.userMap['uid'])
           .collection('chatHistory')
           .doc(widget.user.uid)
-          .update({
+          .set({
         'recentMessage': '📁 $fileName',
         'timeStamp': FieldValue.serverTimestamp(),
-      });
+        'name': widget.user.displayName,
+        'uid': widget.user.uid,
+        'avatar': widget.user.photoURL ?? '',
+        'datatype': 'p2p',
+      }, SetOptions(merge: true));
 
       debugPrint('✅ ChatScreen: File message sent successfully');
     } catch (e) {
@@ -2411,16 +2419,24 @@ class _ChatScreenState extends State<ChatScreen> {
       await _firestore.collection('chatroom').doc(roomId).collection('chats').add(messageData);
 
       // Update chat history for current user
-      await _firestore.collection('users').doc(_auth.currentUser!.uid).collection('chatHistory').doc(widget.userMap['uid']).update({
-        'recentMessage': '🎤 Voice message',
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).collection('chatHistory').doc(widget.userMap['uid']).set({
+        'recentMessage': '🎤 Tin nhắn thoại',
         'timeStamp': FieldValue.serverTimestamp(),
-      });
+        'name': widget.userMap['name'],
+        'uid': widget.userMap['uid'],
+        'avatar': widget.userMap['avatar'] ?? '',
+        'datatype': 'p2p',
+      }, SetOptions(merge: true));
 
       // Update chat history for recipient
-      await _firestore.collection('users').doc(widget.userMap['uid']).collection('chatHistory').doc(_auth.currentUser!.uid).update({
-        'recentMessage': '🎤 Voice message',
+      await _firestore.collection('users').doc(widget.userMap['uid']).collection('chatHistory').doc(_auth.currentUser!.uid).set({
+        'recentMessage': '🎤 Tin nhắn thoại',
         'timeStamp': FieldValue.serverTimestamp(),
-      });
+        'name': widget.user.displayName,
+        'uid': _auth.currentUser!.uid,
+        'avatar': widget.user.photoURL ?? '',
+        'datatype': 'p2p',
+      }, SetOptions(merge: true));
 
       if (kDebugMode) { debugPrint('✅ [ChatScreen] Voice message sent successfully'); }
 

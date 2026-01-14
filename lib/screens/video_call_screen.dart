@@ -236,7 +236,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       await firestore.collection('chatroom').doc(widget.chatRoomId).update({
         'lastMessage': callMessage,
         'type': 'videocall',
-        'time': FieldValue.serverTimestamp(),
+        'last_time': FieldValue.serverTimestamp(),
       });
 
       // Update chat history for both users
