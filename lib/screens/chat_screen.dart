@@ -1195,10 +1195,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                             maxLines: null,
                                             textInputAction: TextInputAction.newline,
                                             style: TextStyle(
-                                              color: Colors.black,
+                                              color: Colors.black87,
                                               fontSize: 16,
                                               height: 1.5,
-                                              fontWeight: FontWeight.w600,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                             decoration: InputDecoration(
                                               hintText: "Nhập tin nhắn...",
@@ -1495,7 +1495,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               style: TextStyle(
                                   color: map['sendBy'] == widget.user.displayName
                                       ? Colors.white
-                                      : Colors.grey[900],
+                                      : Colors.black87,
                                   fontSize: 16),
                             ),
                           ),

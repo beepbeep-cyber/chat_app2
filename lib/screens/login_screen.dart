@@ -342,9 +342,9 @@ class LoginPage extends State<Login> {
                                       margin: const EdgeInsets.all(10.0),
                                       child: TextFormField(
                                         style: const TextStyle(
-                                          color: Colors.black,
+                                          color: Colors.black87,
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                         decoration: InputDecoration(
                                             prefixIcon: const Icon(Icons.email),
@@ -379,9 +379,9 @@ class LoginPage extends State<Login> {
                                       margin: const EdgeInsets.all(5.0),
                                       child: TextFormField(
                                         style: const TextStyle(
-                                          color: Colors.black,
+                                          color: Colors.black87,
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                         obscureText: _isVisible ? false : true,
                                         decoration: InputDecoration(

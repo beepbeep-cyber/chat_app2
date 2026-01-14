@@ -1005,9 +1005,9 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                     maxLines: null,
                                     style: TextStyle(
                                       fontSize: 16, 
-                                      color: Colors.black, // Bold, clear text
+                                      color: Colors.black87,
                                       height: 1.5,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                     decoration: InputDecoration(
                                       hintText: 'Nhập tin nhắn...',
@@ -1241,7 +1241,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                     messageText,
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: isMe ? Colors.white : Colors.grey[900],
+                                      color: isMe ? Colors.white : Colors.black87,
                                     ),
                                   ),
                                 ),
@@ -1545,7 +1545,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
-                                    color: isMe ? Colors.white : Colors.grey[900],
+                                    color: isMe ? Colors.white : Colors.black87,
                                   ),
                                 ),
                                 Text(
