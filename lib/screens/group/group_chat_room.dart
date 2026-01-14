@@ -653,6 +653,22 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         "isEncrypted": false,
       });
 
+      // Update chatHistory for all members
+      for (int i = 0; i < memberList.length; i++) {
+        await _firestore
+            .collection('users')
+            .doc(memberList[i]['uid'])
+            .collection('chatHistory')
+            .doc(widget.groupChatId)
+            .update({
+          'lastMessage': "${widget.user.displayName} đã gửi 📁 $fileName",
+          'type': "file",
+          'time': timeForMessage(DateTime.now().toString()),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
+          'isRead': memberList[i]['uid'] == widget.user.uid, // Only sender has read
+        });
+      }
+
       debugPrint('✅ GroupChatRoom: File message sent successfully');
     } catch (e) {
       debugPrint('❌ GroupChatRoom: Error sending file message: $e');
@@ -2225,6 +2241,22 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           .doc(widget.groupChatId)
           .collection('chats')
           .add(chatData);
+
+      // Update chatHistory for all members
+      for (int i = 0; i < memberList.length; i++) {
+        await _firestore
+            .collection('users')
+            .doc(memberList[i]['uid'])
+            .collection('chatHistory')
+            .doc(widget.groupChatId)
+            .update({
+          'lastMessage': "${widget.user.displayName} đã gửi 🎤 Tin nhắn thoại",
+          'type': "voice",
+          'time': timeForMessage(DateTime.now().toString()),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
+          'isRead': memberList[i]['uid'] == widget.user.uid, // Only sender has read
+        });
+      }
 
       if (kDebugMode) { debugPrint('✅ [GroupChat] Voice message sent successfully'); }
 
