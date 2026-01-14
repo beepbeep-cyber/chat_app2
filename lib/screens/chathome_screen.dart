@@ -154,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           // Reject button
           TextButton.icon(
             onPressed: () async {
+              if (!mounted) return;
               Navigator.pop(context);
               await IncomingCallService.rejectCall(callId);
               if (kDebugMode) {
@@ -169,11 +170,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           // Accept button
           ElevatedButton.icon(
             onPressed: () async {
+              // CRITICAL: Close dialog first
+              if (!mounted) return;
               Navigator.pop(context);
+              
+              // Update call status
               await IncomingCallService.acceptCall(callId);
               
               if (kDebugMode) {
                 debugPrint('✅ [HomeScreen] Call accepted, joining channel: $channelName');
+              }
+              
+              // CRITICAL: Check if widget is still mounted before navigating
+              if (!mounted) {
+                if (kDebugMode) {
+                  debugPrint('⚠️ [HomeScreen] Widget unmounted, cannot navigate');
+                }
+                return;
               }
               
               // Navigate to VideoCallScreen
