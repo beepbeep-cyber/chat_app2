@@ -2338,13 +2338,14 @@ class _ChatScreenState extends State<ChatScreen> {
           .collection('chats')
           .doc();
 
+      final now = DateTime.now();
       await message.set({
         "sendBy": widget.user.displayName,
         "message": downloadUrl,
         "type": "file",
-        "time": DateTime.now().toString(),
+        "time": timeForMessage(now.toString()),
         "avatar": widget.user.photoURL,
-        "timeStamp": Timestamp.fromDate(DateTime.now()),
+        "timeStamp": Timestamp.fromDate(now),
         // File metadata
         "fileName": fileName,
         "fileSize": fileSize,
