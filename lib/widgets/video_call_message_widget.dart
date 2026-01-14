@@ -316,7 +316,7 @@ class VideoCallMessageWidget extends StatelessWidget {
 
   String _getCallTitle() {
     if (isMissedCall) {
-      return 'Missed Video Call';
+      return 'Cuộc gọi video nhở';
     }
     return 'Video Call';
   }
@@ -366,8 +366,8 @@ class CompactVideoCallMessage extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           isMissed
-              ? 'Missed call'
-              : 'Video call ${duration.isNotEmpty ? "($duration)" : ""}',
+              ? 'Cuộc gọi nhở'
+              : 'Cuộc gọi video ${duration.isNotEmpty ? "($duration)" : ""}',
           style: TextStyle(
             fontSize: 13,
             color: isMissed ? AppTheme.error : AppTheme.textSecondary,

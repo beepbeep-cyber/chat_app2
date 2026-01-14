@@ -62,7 +62,7 @@ class LoginPage extends State<Login> {
             Icon(Icons.error_outline, color: AppTheme.error, size: 28),
             const SizedBox(width: 12),
             Text(
-              'Login Failed',
+              'Đăng nhập thất bại',
               style: AppTheme.titleLarge,
             ),
           ],
@@ -102,7 +102,7 @@ class LoginPage extends State<Login> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Email Not Verified',
+                'Email chưa được xác minh',
                 style: AppTheme.titleLarge,
               ),
             ),
@@ -474,7 +474,7 @@ class LoginPage extends State<Login> {
                                                         false);
                                             if (kDebugMode) { debugPrint("Login Successful"); }
                                           } else {
-                                            showLoginDialog(result.errorMessage ?? 'Login failed. Please try again.');
+                                            showLoginDialog(result.errorMessage ?? 'Đăng nhập thất bại. Vui lòng thử lại.');
                                             if (kDebugMode) { debugPrint("Login Failed: ${result.errorMessage}"); }
                                           }
                                         });

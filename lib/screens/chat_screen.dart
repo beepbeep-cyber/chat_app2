@@ -63,7 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
   late String email = widget.userMap['email'];
 
   bool isLoading = false;
-  String _loadingMessage = 'Sending photo'; // Dynamic loading message
+  String _loadingMessage = 'Đang gửi ảnh'; // Dynamic loading message
 
   // Cache for decrypted messages to prevent re-decryption
   final Map<String, String> _decryptedMessagesCache = {};
@@ -298,7 +298,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
             content: Text(
-              'Please check your internet connectivity and try again.',
+              'Vui lòng kiểm tra kết nối internet và thử lại.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[700],
@@ -560,7 +560,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       debugPrint('❌ Error uploading image: $e');
       if (mounted) {
-        _showErrorNotification('Failed to send photo: $e');
+        _showErrorNotification('Gửi ảnh thất bại: $e');
       }
     } finally {
       // Hide loading indicator
@@ -599,7 +599,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Show loading overlay using isLoading state
       if (mounted) {
         setState(() {
-          _loadingMessage = 'Sending photo';
+          _loadingMessage = 'Đang gửi ảnh';
           isLoading = true;
         });
       }
@@ -611,12 +611,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Show success message
         if (mounted) {
-          _showSuccessNotification('Photo sent successfully!');
+          _showSuccessNotification('Ảnh đã gửi thành công!');
         }
       } catch (e) {
         debugPrint('❌ Camera: Upload failed - $e');
         if (mounted) {
-          _showErrorNotification('Failed to send photo');
+          _showErrorNotification('Gửi ảnh thất bại');
         }
       } finally {
         // Hide loading overlay
@@ -635,7 +635,7 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('❌ Camera error: $e');
       
       if (mounted) {
-        _showErrorNotification('Failed to send photo. Please try again.', icon: Icons.error_outline);
+        _showErrorNotification('Gửi ảnh thất bại. Vui lòng thử lại.', icon: Icons.error_outline);
       }
     }
   }
@@ -1179,7 +1179,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                               fontWeight: FontWeight.w400,
                                             ),
                                             decoration: InputDecoration(
-                                              hintText: "Type a message...",
+                                              hintText: "Nhập tin nhắn...",
                                               hintStyle: TextStyle(
                                                 color: Colors.grey[500],
                                                 fontSize: 16,
@@ -1298,7 +1298,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Please wait...',
+                              'Vui lòng đợi...',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.85),
                                 fontSize: 13,
@@ -1570,7 +1570,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          'Failed to load image',
+                                          'Không thể tải ảnh',
                                           style: TextStyle(
                                             color: Colors.grey.shade700,
                                             fontSize: 12,
@@ -1713,7 +1713,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                         SizedBox(width: 6),
                                         Text(
-                                          "Sharing now",
+                                          "Đang chia sẻ",
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: isMe ? Colors.white.withValues(alpha: 0.8) : Colors.grey[600],
@@ -1757,7 +1757,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                                 SizedBox(width: 6),
                                 Text(
-                                  "View Location",
+                                  "Xem vị trí",
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -1981,7 +1981,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Location Sharing Ended",
+                                "Kết thúc chia sẻ vị trí",
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
@@ -2232,7 +2232,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Show loading overlay using isLoading state
       if (mounted) {
         setState(() {
-          _loadingMessage = 'Sending file';
+          _loadingMessage = 'Đang gửi file';
           isLoading = true;
         });
       }
@@ -2260,12 +2260,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Show success message
         if (mounted) {
-          _showSuccessNotification('File sent successfully!');
+          _showSuccessNotification('File đã gửi thành công!');
         }
       } catch (e) {
         debugPrint('❌ File upload failed: $e');
         if (mounted) {
-          _showErrorNotification('Failed to send file');
+          _showErrorNotification('Gửi file thất bại');
         }
       } finally {
         // Hide loading overlay
@@ -2392,7 +2392,7 @@ class _ChatScreenState extends State<ChatScreen> {
     
     try {
       setState(() {
-        _loadingMessage = 'Sending voice message';
+        _loadingMessage = 'Đang gửi tin nhắn thoại';
         isLoading = true;
       });
 
@@ -2434,7 +2434,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       
       if (mounted) {
-        _showErrorNotification('Failed to send voice message: $e');
+        _showErrorNotification('Gửi tin nhắn thoại thất bại: $e');
       }
     }
   }
@@ -2502,7 +2502,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "Send your current location to chat",
+                                  "Gửi vị trí hiện tại của bạn vào chat",
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey[600],
@@ -2773,7 +2773,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     child: Text(
-                      "Message Options",
+                      "Tùy chọn tin nhắn",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -2806,7 +2806,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              "Delete message",
+                              "Xóa tin nhắn",
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
                                 fontSize: 15,
@@ -2843,7 +2843,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: Text(
-                                "Edit message",
+                                "Sửa tin nhắn",
                                 style: TextStyle(
                                   fontWeight: FontWeight.w500,
                                   fontSize: 15,
@@ -2928,7 +2928,7 @@ class _ChatScreenState extends State<ChatScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                "Cancel",
+                "Hủy",
                 style: TextStyle(color: Colors.grey[600], fontSize: 15),
               ),
             ),
@@ -2947,7 +2947,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               ),
-              child: const Text("Save", style: TextStyle(fontSize: 15)),
+              child: const Text("Lưu", style: TextStyle(fontSize: 15)),
             ),
           ],
         );
@@ -3181,7 +3181,7 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
                 children: const [
                   Icon(Icons.error, color: Colors.white),
                   SizedBox(width: 12),
-                  Text('Failed to upload voice message'),
+                  Text('Tải lên tin nhắn thoại thất bại'),
                 ],
               ),
               backgroundColor: Colors.red.shade700,

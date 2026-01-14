@@ -546,12 +546,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         GlassNavItem(
           icon: Icons.chat_bubble_outline_rounded,
           activeIcon: Icons.chat_bubble_rounded,
-          label: 'Chats',
+          label: 'Trò chuyện',
         ),
         GlassNavItem(
           icon: Icons.groups_outlined,
           activeIcon: Icons.groups_rounded,
-          label: 'Groups',
+          label: 'Nhóm',
         ),
         GlassNavItem(
           icon: Icons.call_outlined,
@@ -561,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         GlassNavItem(
           icon: Icons.settings_outlined,
           activeIcon: Icons.settings_rounded,
-          label: 'Settings',
+          label: 'Cài đặt',
         ),
       ],
     );

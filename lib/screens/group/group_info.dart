@@ -128,7 +128,7 @@ class _GroupInfoState extends State<GroupInfo> {
                 foregroundColor: AppTheme.gray700,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
-              child: const Text('Cancel', style: TextStyle(fontSize: 15)),
+              child: const Text('Hủy', style: TextStyle(fontSize: 15)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -269,7 +269,7 @@ class _GroupInfoState extends State<GroupInfo> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Auto-delete Messages',
+                    'Tự động xóa tin nhắn',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -373,8 +373,8 @@ class _GroupInfoState extends State<GroupInfo> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(minutes == null 
-              ? 'Auto-delete disabled' 
-              : 'Auto-delete set to ${_getDurationText(minutes)}'),
+              ? 'Đã tắt tự động xóa' 
+              : 'Tự động xóa sau ${_getDurationText(minutes)}'),
             backgroundColor: AppTheme.success,
           ),
         );
@@ -457,7 +457,7 @@ class _GroupInfoState extends State<GroupInfo> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              'Hủy',
               style: TextStyle(color: AppTheme.gray600),
             ),
           ),
@@ -578,7 +578,7 @@ class _GroupInfoState extends State<GroupInfo> {
     if (!checkAdmin()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Only admins can change group avatar'),
+          content: Text('Chỉ có quản trị viên mới có thể đổi ảnh đại diện nhóm'),
           backgroundColor: AppTheme.warning,
         ),
       );
@@ -654,7 +654,7 @@ class _GroupInfoState extends State<GroupInfo> {
     if (!checkAdmin()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Only admins can change group name'),
+          content: Text('Chỉ có quản trị viên mới có thể đổi tên nhóm'),
           backgroundColor: AppTheme.warning,
         ),
       );
@@ -688,7 +688,7 @@ class _GroupInfoState extends State<GroupInfo> {
         content: TextField(
           controller: nameController,
           decoration: InputDecoration(
-            hintText: 'Enter new group name',
+            hintText: 'Nhập tên nhóm mới',
             filled: true,
             fillColor: AppTheme.gray50,
             border: OutlineInputBorder(
@@ -700,7 +700,7 @@ class _GroupInfoState extends State<GroupInfo> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: AppTheme.gray600)),
+            child: Text('Hủy', style: TextStyle(color: AppTheme.gray600)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -799,7 +799,7 @@ class _GroupInfoState extends State<GroupInfo> {
     if (!checkAdmin()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Only admins can assign admin roles'),
+          content: Text('Chỉ có quản trị viên mới có thể gán quyền admin'),
           backgroundColor: AppTheme.warning,
         ),
       );
@@ -835,7 +835,7 @@ class _GroupInfoState extends State<GroupInfo> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: AppTheme.gray600)),
+            child: Text('Hủy', style: TextStyle(color: AppTheme.gray600)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -872,7 +872,7 @@ class _GroupInfoState extends State<GroupInfo> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('${membersList[index]['name']} is now an admin!'),
+                      content: Text('Đã cấp quyền quản trị cho ${membersList[index]['name']}!'),
                       backgroundColor: AppTheme.success,
                     ),
                   );
@@ -981,7 +981,7 @@ class _GroupInfoState extends State<GroupInfo> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error leaving group: $e'),
+              content: Text('Lỗi khi rời nhóm: $e'),
               backgroundColor: AppTheme.error,
             ),
           );
@@ -991,7 +991,7 @@ class _GroupInfoState extends State<GroupInfo> {
       // Admin cannot leave - show message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Admin cannot leave the group. Transfer admin role first.'),
+          content: Text('Quản trị viên không thể rời nhóm. Vui lòng chuyển quyền quản trị trước.'),
           backgroundColor: AppTheme.warning,
         ),
       );
@@ -1234,7 +1234,7 @@ class _GroupInfoState extends State<GroupInfo> {
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Only admins can change auto-delete settings'),
+                              content: Text('Chỉ có quản trị viên mới có thể thay đổi cài đặt tự động xóa'),
                               backgroundColor: AppTheme.warning,
                             ),
                           );
@@ -1250,7 +1250,7 @@ class _GroupInfoState extends State<GroupInfo> {
                         child: Icon(Icons.auto_delete_outlined, color: AppTheme.warning, size: 22),
                       ),
                       title: Text(
-                        'Auto-delete Messages',
+                        'Tự động xóa tin nhắn',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -1292,7 +1292,7 @@ class _GroupInfoState extends State<GroupInfo> {
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Only admins can delete all messages'),
+                              content: Text('Chỉ có quản trị viên mới có thể xóa tất cả tin nhắn'),
                               backgroundColor: AppTheme.warning,
                             ),
                           );
@@ -1404,7 +1404,7 @@ class _GroupInfoState extends State<GroupInfo> {
                                               child: Icon(Icons.admin_panel_settings, color: AppTheme.accent, size: 22),
                                             ),
                                             title: Text('Make Admin', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                                            subtitle: Text('Grant admin privileges', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                                            subtitle: Text('Cấp quyền quản trị', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
                                             onTap: () {
                                               Navigator.pop(context);
                                               _makeAdmin(index);
@@ -1423,7 +1423,7 @@ class _GroupInfoState extends State<GroupInfo> {
                                               child: Icon(Icons.person_remove_outlined, color: AppTheme.error, size: 22),
                                             ),
                                             title: Text('Remove Member', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.error)),
-                                            subtitle: Text('Remove from group', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
+                                            subtitle: Text('Xóa khỏi nhóm', style: TextStyle(fontSize: 13, color: AppTheme.gray600)),
                                             onTap: () {
                                               Navigator.pop(context);
                                               showRemoveDialog(index);

@@ -993,7 +993,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                                       fontWeight: FontWeight.w400,
                                     ),
                                     decoration: InputDecoration(
-                                      hintText: 'Type a message...',
+                                      hintText: 'Nhập tin nhắn...',
                                       hintStyle: TextStyle(
                                         color: Colors.grey[500], // Fixed: Use solid color
                                         fontSize: 16,
