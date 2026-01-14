@@ -9,6 +9,7 @@ import '../configs/agora_configs.dart';
 import '../db/log_repository.dart';
 import '../models/log_model.dart';
 import '../resources/methods.dart'; // For timeForMessage
+import '../services/fcm_service.dart'; // For sending call notifications
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
@@ -108,6 +109,32 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         channelProfile: ChannelProfileType.channelProfileCommunication,
       ),
     );
+    
+    // 🔔 Send call notification to callee
+    if (widget.calleeUid != null) {
+      await _sendCallNotification();
+    }
+  }
+  
+  /// Send incoming call notification to callee
+  Future<void> _sendCallNotification() async {
+    try {
+      await FCMService.sendNotificationToUser(
+        userId: widget.calleeUid!,
+        title: '📹 Cuộc gọi video đến',
+        body: '${widget.userName} đang gọi video cho bạn',
+        data: {
+          'type': 'video_call',
+          'channelName': widget.channelName,
+          'callerName': widget.userName,
+          'callerAvatar': widget.userAvatar ?? '',
+          'chatRoomId': widget.chatRoomId ?? '',
+        },
+      );
+      debugPrint('✅ [VideoCall] Notification sent to ${widget.calleeUid}');
+    } catch (e) {
+      debugPrint('❌ [VideoCall] Failed to send notification: $e');
+    }
   }
 
   void _startCallTimer() {

@@ -169,10 +169,62 @@ class FCMService {
       if (kDebugMode) { debugPrint('🔔 [FCM] Foreground message received'); }
       if (kDebugMode) { debugPrint('🔔 [FCM] Title: ${message.notification?.title}'); }
       if (kDebugMode) { debugPrint('🔔 [FCM] Body: ${message.notification?.body}'); }
+      if (kDebugMode) { debugPrint('🔔 [FCM] Data: ${message.data}'); }
     }
 
-    // Show local notification
-    _showLocalNotification(message);
+    // Check if it's a video call notification
+    if (message.data['type'] == 'video_call') {
+      _handleVideoCallNotification(message);
+    } else {
+      // Show normal local notification
+      _showLocalNotification(message);
+    }
+  }
+  
+  /// Handle incoming video call notification
+  Future<void> _handleVideoCallNotification(RemoteMessage message) async {
+    final data = message.data;
+    final channelName = data['channelName'] as String?;
+    final callerName = data['callerName'] as String?;
+    final callerAvatar = data['callerAvatar'] as String?;
+    
+    if (channelName == null || callerName == null) {
+      if (kDebugMode) {
+        debugPrint('❌ [FCM] Invalid video call data');
+      }
+      return;
+    }
+    
+    // Show incoming call notification with custom action
+    await _localNotifications.show(
+      message.hashCode,
+      '📹 Cuộc gọi video đến',
+      '$callerName đang gọi video cho bạn',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channel.id,
+          _channel.name,
+          channelDescription: _channel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: true,
+          enableVibration: true,
+          fullScreenIntent: true, // Show as heads-up notification
+          category: AndroidNotificationCategory.call,
+          styleInformation: const BigTextStyleInformation(
+            'Nhấn để trả lời',
+          ),
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          interruptionLevel: InterruptionLevel.timeSensitive,
+        ),
+      ),
+      payload: jsonEncode(data),
+    );
   }
 
   /// Show local notification
@@ -245,15 +297,42 @@ class FCMService {
   void _navigateToScreen(Map<String, dynamic> data) {
     // Extract notification type and navigate accordingly
     final type = data['type'] as String?;
-    final chatId = data['chatId'] as String?;
-    final senderId = data['senderId'] as String?;
-
+    
     if (kDebugMode) {
-      if (kDebugMode) { debugPrint('🔔 [FCM] Navigate - Type: $type, ChatId: $chatId, SenderId: $senderId'); }
+      if (kDebugMode) { debugPrint('🔔 [FCM] Navigate - Type: $type'); }
+      if (kDebugMode) { debugPrint('🔔 [FCM] Data: $data'); }
     }
 
-    // TODO: Implement navigation based on notification type
-    // Example:
+    // Handle video call notification
+    if (type == 'video_call') {
+      final channelName = data['channelName'] as String?;
+      final callerName = data['callerName'] as String?;
+      final callerAvatar = data['callerAvatar'] as String?;
+      final chatRoomId = data['chatRoomId'] as String?;
+      
+      if (channelName != null && callerName != null) {
+        // Import and navigate to VideoCallScreen
+        // Note: This requires proper navigator key setup in main.dart
+        if (kDebugMode) {
+          debugPrint('📹 [FCM] Navigating to video call: $channelName');
+        }
+        
+        // TODO: Implement navigation using navigatorKey
+        // navigatorKey.currentState?.push(MaterialPageRoute(
+        //   builder: (_) => VideoCallScreen(
+        //     channelName: channelName,
+        //     userName: 'You',
+        //     calleeName: callerName,
+        //     calleeAvatar: callerAvatar,
+        //     chatRoomId: chatRoomId,
+        //   ),
+        // ));
+      }
+    }
+    
+    // Handle other notification types
+    // final chatId = data['chatId'] as String?;
+    // final senderId = data['senderId'] as String?;
     // if (type == 'chat' && chatId != null) {
     //   navigatorKey.currentState?.push(MaterialPageRoute(
     //     builder: (_) => ChatScreen(chatId: chatId),
