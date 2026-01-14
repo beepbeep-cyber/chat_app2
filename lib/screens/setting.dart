@@ -417,35 +417,43 @@ class _SettingState extends State<Setting> {
       "status": "Offline",  // Force status to Offline when locked
     });
     
-    int? n;
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(_auth.currentUser!.uid)
-        .collection('chatHistory')
-        .get()
-        .then((value) => {n = value.docs.length});
-    for (int i = 0; i < n!; i++) {
-      String? uId;
-      await _firestore
+    try {
+      // Get all chat history
+      final chatHistorySnapshot = await _firestore
           .collection('users')
           .doc(_auth.currentUser!.uid)
           .collection('chatHistory')
-          .get()
-          .then((value) {
-        if (value.docs[i]['datatype'] == 'p2p' &&
-            value.docs[i]['uid'] != _auth.currentUser!.uid) {
-          uId = value.docs[i]['uid'];
-          _firestore
+          .get();
+
+      // Update status for each p2p contact
+      for (var doc in chatHistorySnapshot.docs) {
+        final data = doc.data();
+        
+        // Check if document has required fields and is p2p chat
+        if (data.containsKey('datatype') && 
+            data.containsKey('uid') &&
+            data['datatype'] == 'p2p' &&
+            data['uid'] != _auth.currentUser!.uid) {
+          
+          final contactUid = data['uid'] as String;
+          
+          // Update contact's chat history to show user as offline
+          await _firestore
               .collection('users')
-              .doc(uId)
+              .doc(contactUid)
               .collection('chatHistory')
               .doc(_auth.currentUser!.uid)
               .update({
             'status': 'Offline',
+          }).catchError((error) {
+            debugPrint('⚠️ Failed to update status for $contactUid: $error');
           });
         }
-      });
+      }
+    } catch (e) {
+      debugPrint('❌ Error in turnOffStatus: $e');
     }
+
     setState(() {
       isLoading = false;
     });
@@ -460,35 +468,44 @@ class _SettingState extends State<Setting> {
       "isStatusLocked": false,
       "status": "Online",  // Set status back to Online when unlocked
     });
-    int? n;
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(_auth.currentUser!.uid)
-        .collection('chatHistory')
-        .get()
-        .then((value) => {n = value.docs.length});
-    for (int i = 0; i < n!; i++) {
-      String? uId;
-      await _firestore
+
+    try {
+      // Get all chat history
+      final chatHistorySnapshot = await _firestore
           .collection('users')
           .doc(_auth.currentUser!.uid)
           .collection('chatHistory')
-          .get()
-          .then((value) {
-        if (value.docs[i]['datatype'] == 'p2p' &&
-            value.docs[i]['uid'] != _auth.currentUser!.uid) {
-          uId = value.docs[i]['uid'];
-          _firestore
+          .get();
+
+      // Update status for each p2p contact
+      for (var doc in chatHistorySnapshot.docs) {
+        final data = doc.data();
+        
+        // Check if document has required fields and is p2p chat
+        if (data.containsKey('datatype') && 
+            data.containsKey('uid') &&
+            data['datatype'] == 'p2p' &&
+            data['uid'] != _auth.currentUser!.uid) {
+          
+          final contactUid = data['uid'] as String;
+          
+          // Update contact's chat history to show user as online
+          await _firestore
               .collection('users')
-              .doc(uId)
+              .doc(contactUid)
               .collection('chatHistory')
               .doc(_auth.currentUser!.uid)
               .update({
             'status': 'Online',
+          }).catchError((error) {
+            debugPrint('⚠️ Failed to update status for $contactUid: $error');
           });
         }
-      });
+      }
+    } catch (e) {
+      debugPrint('❌ Error in turnOnStatus: $e');
     }
+
     setState(() {
       isLoading = false;
     });
