@@ -202,13 +202,14 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         }
       }
 
+      final now = DateTime.now();
       Map<String, dynamic> chatData = {
         "sendBy": widget.user.displayName,
         "message": encryptedMessage, // Encrypted message
         "type": "text",
-        "time": timeForMessage(DateTime.now().toString()),
+        "time": timeForMessage(now.toString()),
         'avatar': avatarUrl,
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(now),
         'isEncrypted': encryptionSucceeded, // Mark if encryption succeeded
       };
 
@@ -234,7 +235,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           'lastMessage': historyPreview,
           'type': "text",
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
           'isRead': false,
         });
       }
@@ -335,7 +336,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       'type': "img",
       'time': timeForMessage(DateTime.now().toString()),
       'avatar': avatarUrl,
-      'timeStamp': FieldValue.serverTimestamp(),
+      'timeStamp': Timestamp.fromDate(DateTime.now()),
     });
 
     var ref =
@@ -373,7 +374,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
           'lastMessage': "${widget.user.displayName} đã gửi một ảnh",
           'type': "img",
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
           'isRead': false,
         });
       }
@@ -640,9 +641,9 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         "sendBy": widget.user.displayName,
         "message": downloadUrl,
         "type": "file",
-        "time": FieldValue.serverTimestamp(),
+        "time": timeForMessage(DateTime.now().toString()),
         "avatar": widget.user.photoURL,
-        "timeStamp": FieldValue.serverTimestamp(),
+        "timeStamp": Timestamp.fromDate(DateTime.now()),
         // File metadata
         "fileName": fileName,
         "fileSize": fileSize,
@@ -1802,7 +1803,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
       'avatar': avatarUrl,
       'messageId': messageId,
       'uid': _auth.currentUser!.uid,
-      'timeStamp': FieldValue.serverTimestamp(),
+      'timeStamp': Timestamp.fromDate(DateTime.now()),
     });
 
     await _firestore
@@ -1824,7 +1825,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         'lastMessage': "${widget.user.displayName} đã gửi một vị trí trực tiếp",
         'type': "location",
         'time': timeForMessage(DateTime.now().toString()),
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'isRead': false,
       });
     }
@@ -2111,7 +2112,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
               .update({
             'lastMessage': '${widget.user.displayName}: $message',
             'time': timeForMessage(DateTime.now().toString()),
-            'timeStamp': FieldValue.serverTimestamp(),
+            'timeStamp': Timestamp.fromDate(DateTime.now()),
             'isRead': false,
           });
         }
@@ -2150,7 +2151,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
               .update({
             'lastMessage': '${widget.user.displayName} đã xóa một tin nhắn',
             'time': timeForMessage(DateTime.now().toString()),
-            'timeStamp': FieldValue.serverTimestamp(),
+            'timeStamp': Timestamp.fromDate(DateTime.now()),
             'isRead': false,
           });
         }
@@ -2207,13 +2208,14 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
         isLoading = true;
       });
 
+      final now = DateTime.now();
       Map<String, dynamic> chatData = {
         "sendBy": widget.user.displayName,
         "message": audioUrl,
         "type": "voice",
-        "time": timeForMessage(DateTime.now().toString()),
+        "time": timeForMessage(now.toString()),
         'avatar': avatarUrl,
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(now),
         'fileSize': fileSize,
         'isEncrypted': false, // Voice messages not encrypted
       };
