@@ -112,6 +112,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               // Password field
               TextField(
                 controller: passwordController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
                 obscureText: obscurePassword,
                 decoration: InputDecoration(
                   labelText: 'Mật khẩu',
@@ -132,6 +137,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               // Confirm password field
               TextField(
                 controller: confirmController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
                 obscureText: obscureConfirm,
                 decoration: InputDecoration(
                   labelText: 'Xác nhận mật khẩu',
@@ -252,6 +262,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
           ),
           content: TextField(
             controller: passwordController,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
             obscureText: obscurePassword,
             autofocus: true,
             decoration: InputDecoration(

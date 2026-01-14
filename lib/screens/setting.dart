@@ -1311,6 +1311,11 @@ class _SettingState extends State<Setting> {
               // API Key input
               TextField(
                 controller: apiKeyController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Dán API Key của bạn',
                   hintText: 'AIza...',

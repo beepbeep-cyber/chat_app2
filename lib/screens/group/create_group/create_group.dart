@@ -184,6 +184,11 @@ class _CreateGroupState extends State<CreateGroup> {
                         SizedBox(height: 12),
                         TextField(
                           controller: _groupName,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                           decoration: InputDecoration(
                             hintText: "Enter group name...",
                             hintStyle: TextStyle(color: Colors.grey.shade400),

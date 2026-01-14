@@ -1063,6 +1063,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: controller,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               maxLines: 5,
               decoration: InputDecoration(
                 hintText: 'Ví dụ: Không thể gửi ảnh...',

@@ -218,6 +218,11 @@ class _AddMemberState extends State<AddMember> {
                 ],
               ),
               child: TextField(
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: InputDecoration(
                   hintText: "Search members...",
                   hintStyle: TextStyle(color: Colors.grey.shade400),

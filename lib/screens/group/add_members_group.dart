@@ -168,6 +168,11 @@ class _AddMemberInGroupState extends State<AddMemberInGroup> {
                         ),
                         child: TextField(
                           controller: _search,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                           decoration: InputDecoration(
                             hintText: "Search members to add...",
                             hintStyle: TextStyle(color: Colors.grey.shade400),

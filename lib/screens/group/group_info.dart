@@ -687,6 +687,11 @@ class _GroupInfoState extends State<GroupInfo> {
         ),
         content: TextField(
           controller: nameController,
+          style: const TextStyle(
+            color: Colors.black87,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: 'Nhập tên nhóm mới',
             filled: true,
