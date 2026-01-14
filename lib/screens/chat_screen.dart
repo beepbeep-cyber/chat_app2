@@ -3159,7 +3159,7 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
               children: const [
                 Icon(Icons.error_outline, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Microphone permission denied'),
+                Text('Không có quyền truy cập microphone'),
               ],
             ),
             backgroundColor: Colors.red.shade700,

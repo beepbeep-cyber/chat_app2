@@ -229,6 +229,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         'callStatus': callStatus,
         'callDuration': _callDuration,
         'timeSpend': _callDuration,
+        'time': DateTime.now().toString(), // For UI display compatibility
         'timeStamp': FieldValue.serverTimestamp(),
       });
 

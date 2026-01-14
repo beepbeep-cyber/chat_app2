@@ -89,8 +89,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     showCupertinoDialog<String>(
       context: context,
       builder: (BuildContext context) => CupertinoAlertDialog(
-        title: const Text('No Connection'),
-        content: const Text('Please check your internet connectivity'),
+        title: const Text('Không có kết nối'),
+        content: const Text('Vui lòng kiểm tra kết nối internet'),
         actions: <Widget>[
           TextButton(
             onPressed: () async {
@@ -309,10 +309,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   String _getHeaderTitle() {
     switch (_selectedIndex) {
-      case 0: return "Messages";
+      case 0: return "Tin nhắn";
       case 1: return "Groups";
-      case 2: return "Calls";
-      default: return "Messages";
+      case 2: return "Cuộc gọi";
+      default: return "Tin nhắn";
     }
   }
 
@@ -321,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: GlassSearchBar(
         controller: _searchController,
-        hintText: "Search messages...",
+        hintText: "Tìm kiếm tin nhắn...",
         readOnly: true,
         onTap: () {
           if (!isDeviceConnected) {
@@ -468,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         Padding(
           padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8),
           child: Text(
-            'Recent',
+            'Gần đây',
             style: AppTheme.labelLarge.copyWith(color: AppTheme.textSecondary),
           ),
         ),
@@ -556,7 +556,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         GlassNavItem(
           icon: Icons.call_outlined,
           activeIcon: Icons.call_rounded,
-          label: 'Calls',
+          label: 'Cuộc gọi',
         ),
         GlassNavItem(
           icon: Icons.settings_outlined,
