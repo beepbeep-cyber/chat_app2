@@ -59,6 +59,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
   List memberList = [];
   String? avatarUrl;
   bool isLoading = false;
+  late String _currentGroupName; // Mutable group name for real-time updates
 
   // E2EE Decryption caching to prevent repeated decryption on widget rebuilds
   final Map<String, String> _decryptedMessagesCache = {};
@@ -66,6 +67,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
 
   @override
   void initState() {
+    _currentGroupName = widget.groupName; // Initialize with widget param
     getConnectivity();
     getMemberList();
     getCurrentUserAvatar();
@@ -761,7 +763,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.groupName,
+                          _currentGroupName,
                           style: TextStyle(
                             color: AppTheme.primaryDark,
                             fontSize: 17,
@@ -803,7 +805,7 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                         context,
                         SlideRightRoute(
                           page: GroupInfo(
-                            groupName: widget.groupName,
+                            groupName: _currentGroupName,
                             groupId: widget.groupChatId,
                             user: widget.user,
                             memberListt: memberList,
@@ -813,9 +815,9 @@ class _GroupChatRoomState extends State<GroupChatRoom> {
                       );
                       
                       // Update group name if changed
-                      if (newGroupName != null && newGroupName != widget.groupName && mounted) {
+                      if (newGroupName != null && newGroupName != _currentGroupName && mounted) {
                         setState(() {
-                          widget.groupName = newGroupName;
+                          _currentGroupName = newGroupName;
                         });
                       }
                     },
