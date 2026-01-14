@@ -344,6 +344,10 @@ class LoginPage extends State<Login> {
                                         decoration: InputDecoration(
                                             prefixIcon: const Icon(Icons.email),
                                             hintText: "Email",
+                                            hintStyle: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                            ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(20))),
@@ -377,6 +381,10 @@ class LoginPage extends State<Login> {
                                               child: Icon(Icons.password),
                                             ),
                                             hintText: "Password",
+                                            hintStyle: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                            ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(20)),

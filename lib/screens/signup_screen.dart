@@ -357,6 +357,10 @@ class _SignUpScreen extends State<SignUp> {
                                               child: Icon(Icons.account_circle),
                                             ),
                                             hintText: "Name",
+                                            hintStyle: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                            ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(20))),
@@ -381,6 +385,10 @@ class _SignUpScreen extends State<SignUp> {
                                               child: Icon(Icons.email),
                                             ),
                                             hintText: "Email",
+                                            hintStyle: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                            ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(20))),
@@ -406,6 +414,10 @@ class _SignUpScreen extends State<SignUp> {
                                               child: Icon(Icons.password),
                                             ),
                                             hintText: "Password",
+                                            hintStyle: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                            ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(20)),
@@ -445,6 +457,10 @@ class _SignUpScreen extends State<SignUp> {
                                               child: Icon(Icons.password),
                                             ),
                                             hintText: "Confirm Password",
+                                            hintStyle: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                            ),
                                             border: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(20)),
