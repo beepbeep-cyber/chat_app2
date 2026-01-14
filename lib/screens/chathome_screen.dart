@@ -108,12 +108,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final String chatRoomId = callData['chatRoomId'] ?? '';
     final String callerUid = callData['callerUid'] ?? '';
     final String callId = callData['callId'] ?? '';
+    
+    // CRITICAL: Save HomeScreen context before showing dialog!
+    final homeContext = context;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black87,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
         child: Container(
@@ -252,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           borderRadius: BorderRadius.circular(16),
                           onTap: () async {
                             if (!mounted) return;
-                            Navigator.pop(context);
+                            Navigator.pop(dialogContext); // Close dialog with dialog context
                             await IncomingCallService.rejectCall(callId);
                             if (kDebugMode) {
                               debugPrint('❌ [HomeScreen] Call rejected');
@@ -304,9 +307,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
                           onTap: () async {
-                            // CRITICAL: Close dialog first
+                            // CRITICAL: Close dialog first with dialog context
                             if (!mounted) return;
-                            Navigator.pop(context);
+                            Navigator.pop(dialogContext); // Use dialog context to close
                             
                             // Update call status
                             await IncomingCallService.acceptCall(callId);
@@ -323,9 +326,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               return;
                             }
                             
-                            // Navigate to VideoCallScreen
+                            // Navigate using HOME context (not dialog context!)
                             Navigator.push(
-                              context,
+                              homeContext, // Use saved home context!
                               MaterialPageRoute(
                                 builder: (context) => VideoCallScreen(
                                   channelName: channelName,
