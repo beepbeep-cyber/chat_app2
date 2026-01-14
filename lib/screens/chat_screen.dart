@@ -2279,13 +2279,6 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         _showErrorNotification('Lỗi khi gửi file. Vui lòng thử lại!', icon: Icons.error_outline);
       }
-              ],
-            ),
-            backgroundColor: Colors.red[700],
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     }
   }
 
@@ -3095,7 +3088,25 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
       if (kDebugMode) { debugPrint('❌ [BottomSheet] Failed to start recording'); }
       if (mounted) {
         Navigator.pop(context);
-        _showErrorNotification('Microphone permission denied');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Microphone permission denied'),
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).size.height - 160,
+              left: 16,
+              right: 16,
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -3123,7 +3134,25 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
         if (kDebugMode) { debugPrint('❌ [BottomSheet] Upload failed'); }
         if (mounted) {
           Navigator.pop(context);
-          _showErrorNotification('Failed to upload voice message');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.error, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Failed to upload voice message'),
+                ],
+              ),
+              backgroundColor: Colors.red.shade700,
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height - 160,
+                left: 16,
+                right: 16,
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
         }
       }
     } else {
