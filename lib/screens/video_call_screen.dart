@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../configs/agora_configs.dart';
 import '../db/log_repository.dart';
 import '../models/log_model.dart';
+import '../resources/methods.dart'; // For timeForMessage
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
@@ -218,7 +219,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       debugPrint('📞 VideoCall: Sending call message - userName: ${widget.userName}, calleeName: ${widget.calleeName}');
 
       // Add call message to chat
-      // FIX: Use client timestamp to prevent message stuck at bottom
+      // FIX: Use client timestamp AND consistent time format
       final now = DateTime.now();
       await firestore
           .collection('chatroom')
@@ -231,7 +232,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         'callStatus': callStatus,
         'callDuration': _callDuration,
         'timeSpend': _callDuration,
-        'time': now.toString(), // For UI display compatibility
+        'time': timeForMessage(now.toString()), // Use timeForMessage for consistent format
         'timeStamp': Timestamp.fromDate(now), // Use client timestamp instead of serverTimestamp
       });
 
