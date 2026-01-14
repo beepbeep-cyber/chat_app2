@@ -379,7 +379,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'encrypted': false,
           'type': "text",
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
         };
         await _firestore
             .collection('chatroom')
@@ -407,7 +407,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': widget.userMap['avatar'],
         'status': widget.userMap['status'],
         'datatype': 'p2p',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'isRead': true,
       });
       String? currentUserAvatar;
@@ -434,7 +434,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': currentUserAvatar,
         'status': status,
         'datatype': 'p2p',
-        'timeStamp': FieldValue.serverTimestamp(),  // ← FIX: Use server timestamp
+        'timeStamp': Timestamp.fromDate(DateTime.now()),  // ← FIX: Use server timestamp
         'isRead': false,
       });
     } else {
@@ -477,7 +477,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'message': _message.text,
         'type': "img",
         'time': timeForMessage(DateTime.now().toString()),
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
       });
 
       var ref =
@@ -526,7 +526,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'avatar': widget.userMap['avatar'],
           'status': widget.userMap['status'],
           'datatype': 'p2p',
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
           'isRead': true,
         });
         String? currentUserAvatar;
@@ -553,7 +553,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'avatar': currentUserAvatar,
           'status': status,
           'datatype': 'p2p',
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
           'isRead': false,
         });
       }
@@ -658,7 +658,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'message': 'Uploading photo...',
       'type': "img",
       'time': timeForMessage(DateTime.now().toString()),
-      'timeStamp': FieldValue.serverTimestamp(),
+      'timeStamp': Timestamp.fromDate(DateTime.now()),
     });
 
     // Upload to Firebase Storage
@@ -715,7 +715,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': widget.userMap['avatar'],
         'status': widget.userMap['status'],
         'datatype': 'p2p',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'isRead': true,
       });
 
@@ -748,7 +748,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'avatar': currentUserAvatar,
         'status': userStatus,
         'datatype': 'p2p',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'isRead': false,
       });
     }
@@ -2342,9 +2342,9 @@ class _ChatScreenState extends State<ChatScreen> {
         "sendBy": widget.user.displayName,
         "message": downloadUrl,
         "type": "file",
-        "time": FieldValue.serverTimestamp(),
+        "time": DateTime.now().toString(),
         "avatar": widget.user.photoURL,
-        "timeStamp": FieldValue.serverTimestamp(),
+        "timeStamp": Timestamp.fromDate(DateTime.now()),
         // File metadata
         "fileName": fileName,
         "fileSize": fileSize,
@@ -2371,7 +2371,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc(widget.userMap['uid'])
           .set({
         'recentMessage': '📁 $fileName',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'name': widget.userMap['name'],
         'uid': widget.userMap['uid'],
         'avatar': widget.userMap['avatar'] ?? '',
@@ -2388,7 +2388,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc(widget.user.uid)
           .set({
         'recentMessage': '📁 $fileName',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'name': widget.user.displayName,
         'uid': widget.user.uid,
         'avatar': widget.user.photoURL ?? '',
@@ -2438,7 +2438,7 @@ class _ChatScreenState extends State<ChatScreen> {
         "type": "voice",
         "time": timeForMessage(DateTime.now().toString()),
         'avatar': widget.user.photoURL ?? '',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'fileSize': fileSize,
       };
 
@@ -2447,7 +2447,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Update chat history for current user
       await _firestore.collection('users').doc(_auth.currentUser!.uid).collection('chatHistory').doc(widget.userMap['uid']).set({
         'recentMessage': '🎤 Tin nhắn thoại',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'name': widget.userMap['name'],
         'uid': widget.userMap['uid'],
         'avatar': widget.userMap['avatar'] ?? '',
@@ -2459,7 +2459,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Update chat history for recipient
       await _firestore.collection('users').doc(widget.userMap['uid']).collection('chatHistory').doc(_auth.currentUser!.uid).set({
         'recentMessage': '🎤 Tin nhắn thoại',
-        'timeStamp': FieldValue.serverTimestamp(),
+        'timeStamp': Timestamp.fromDate(DateTime.now()),
         'name': widget.user.displayName,
         'uid': _auth.currentUser!.uid,
         'avatar': widget.user.photoURL ?? '',
@@ -2601,7 +2601,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'type': "location",
       'time': timeForMessage(DateTime.now().toString()),
       'messageId': messageId,
-      'timeStamp': FieldValue.serverTimestamp(),
+      'timeStamp': Timestamp.fromDate(DateTime.now()),
     });
     await _firestore
         .collection('users')
@@ -2626,7 +2626,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'avatar': widget.userMap['avatar'],
       'status': widget.userMap['status'],
       'datatype': 'p2p',
-      'timeStamp': FieldValue.serverTimestamp(),
+      'timeStamp': Timestamp.fromDate(DateTime.now()),
       'isRead': true,
     });
     String? currentUserAvatar;
@@ -2653,7 +2653,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'avatar': currentUserAvatar,
       'status': status,
       'datatype': 'p2p',
-      'timeStamp': FieldValue.serverTimestamp(),
+      'timeStamp': Timestamp.fromDate(DateTime.now()),
       'isRead': false,
     });
   }
@@ -3031,7 +3031,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': 'Bạn: $message',
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
         });
         await _firestore
             .collection('users')
@@ -3041,7 +3041,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': message,
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
         });
       }
     }
@@ -3077,7 +3077,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': 'Bạn đã xóa một tin nhắn',
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
         });
         await _firestore
             .collection('users')
@@ -3087,7 +3087,7 @@ class _ChatScreenState extends State<ChatScreen> {
             .update({
           'lastMessage': '${widget.user.displayName} đã xóa một tin nhắn',
           'time': timeForMessage(DateTime.now().toString()),
-          'timeStamp': FieldValue.serverTimestamp(),
+          'timeStamp': Timestamp.fromDate(DateTime.now()),
         });
       }
     }
