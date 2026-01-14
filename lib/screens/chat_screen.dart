@@ -919,7 +919,18 @@ class _ChatScreenState extends State<ChatScreen> {
                         showDialogInternetCheck();
                       } else {
                         // Generate unique channel name for this call
-                        final channelName = '${widget.chatRoomId}_${DateTime.now().millisecondsSinceEpoch}';
+                        // CRITICAL: Sanitize channel name - Agora doesn't allow spaces or Unicode
+                        final sanitizedRoomId = widget.chatRoomId
+                            .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_') // Remove invalid chars
+                            .replaceAll(RegExp(r'_+'), '_'); // Collapse multiple underscores
+                        final channelName = '${sanitizedRoomId}_${DateTime.now().millisecondsSinceEpoch}';
+                        
+                        if (kDebugMode) {
+                          debugPrint('🎥 [ChatScreen] Video call initiated');
+                          debugPrint('   Original chatRoomId: ${widget.chatRoomId}');
+                          debugPrint('   Sanitized: $sanitizedRoomId');
+                          debugPrint('   Final channelName: $channelName');
+                        }
                         
                         Navigator.push(
                           context,
