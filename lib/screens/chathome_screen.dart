@@ -16,6 +16,7 @@ import 'package:my_porject/screens/group/group_chat.dart';
 import 'package:my_porject/screens/private_chat_screen.dart';
 import 'package:my_porject/widgets/conversationList.dart';
 import 'package:my_porject/services/cache_service.dart';
+import 'package:my_porject/services/presence_service.dart';
 import 'package:provider/provider.dart';
 import 'package:my_porject/resources/methods.dart';
 import '../db/log_repository.dart';
@@ -56,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _initializeApp() async {
+    // Initialize presence service for automatic offline detection
+    await PresenceService().initialize();
+    
     setStatus("Online");
     changeStatus("Online");
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -164,12 +168,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      setStatus("Online");
-      changeStatus('Online');
-    } else {
-      setStatus("Offline");
-      changeStatus('Offline');
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App returned to foreground
+        setStatus("Online");
+        changeStatus('Online');
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        // App going to background or being killed
+        // Use PresenceService for reliable offline detection
+        PresenceService().setOffline();
+        break;
     }
   }
 
