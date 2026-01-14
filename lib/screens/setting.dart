@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:my_porject/screens/login_screen.dart';
+import 'package:my_porject/screens/help_support_screen.dart';
 import 'package:my_porject/services/ai_chat_service.dart';
 import 'package:my_porject/services/biometric_auth_service.dart';
 import 'package:my_porject/services/fcm_service.dart';
@@ -922,10 +923,15 @@ class _SettingState extends State<Setting> {
                                   // Help Option
                                   _buildMenuOption(
                                     icon: Icons.help_outline,
-                                    title: "Help & Support",
-                                    subtitle: "Get help and contact support",
+                                    title: "Trợ giúp & Hỗ trợ",
+                                    subtitle: "Nhận trợ giúp và liên hệ hỗ trợ",
                                     onTap: () {
-                                      // Navigate to help screen
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const HelpSupportScreen(),
+                                        ),
+                                      );
                                     },
                                     isLast: true,
                                   ),
