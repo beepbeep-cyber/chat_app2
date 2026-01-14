@@ -344,8 +344,8 @@ class LoginPage extends State<Login> {
                                         decoration: InputDecoration(
                                             prefixIcon: const Icon(Icons.email),
                                             hintText: "Email",
-                                            hintStyle: TextStyle(
-                                                color: Colors.grey[600],
+                                            hintStyle: const TextStyle(
+                                                color: Colors.black54,
                                                 fontSize: 16,
                                             ),
                                             border: OutlineInputBorder(
@@ -381,8 +381,8 @@ class LoginPage extends State<Login> {
                                               child: Icon(Icons.password),
                                             ),
                                             hintText: "Password",
-                                            hintStyle: TextStyle(
-                                                color: Colors.grey[600],
+                                            hintStyle: const TextStyle(
+                                                color: Colors.black54,
                                                 fontSize: 16,
                                             ),
                                             border: OutlineInputBorder(
