@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,8 @@ import 'package:my_porject/screens/private_chat_screen.dart';
 import 'package:my_porject/widgets/conversationList.dart';
 import 'package:my_porject/services/cache_service.dart';
 import 'package:my_porject/services/presence_service.dart';
+import 'package:my_porject/services/incoming_call_service.dart';
+import 'package:my_porject/screens/video_call_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:my_porject/resources/methods.dart';
 import '../db/log_repository.dart';
@@ -54,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeApp();
+    _initializeIncomingCallListener();
   }
 
   void _initializeApp() async {
@@ -68,6 +72,126 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     LogRepository.init(dbName: _auth.currentUser!.uid);
     _getConnectivity();
+  }
+
+  /// Initialize incoming call listener (NO FCM REQUIRED!)
+  void _initializeIncomingCallListener() {
+    final callService = IncomingCallService();
+    
+    // Set callback để show dialog khi có cuộc gọi đến
+    callService.onIncomingCall = (callData) {
+      _showIncomingCallDialog(callData);
+    };
+    
+    // Start listening
+    callService.startListening();
+    
+    if (kDebugMode) {
+      debugPrint('📞 [HomeScreen] Incoming call listener initialized');
+    }
+  }
+
+  /// Show incoming call dialog
+  void _showIncomingCallDialog(Map<String, dynamic> callData) {
+    final String callerName = callData['callerName'] ?? 'Unknown';
+    final String callerAvatar = callData['callerAvatar'] ?? '';
+    final String channelName = callData['channelName'] ?? '';
+    final String chatRoomId = callData['chatRoomId'] ?? '';
+    final String callerUid = callData['callerUid'] ?? '';
+    final String callId = callData['callId'] ?? '';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.video_call, color: Colors.green, size: 32),
+            SizedBox(width: 12),
+            Text('Cuộc gọi video đến'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Avatar
+            if (callerAvatar.isNotEmpty)
+              CircleAvatar(
+                radius: 40,
+                backgroundImage: NetworkImage(callerAvatar),
+              )
+            else
+              const CircleAvatar(
+                radius: 40,
+                child: Icon(Icons.person, size: 40),
+              ),
+            const SizedBox(height: 16),
+            // Caller name
+            Text(
+              callerName,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'đang gọi video cho bạn...',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          // Reject button
+          TextButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              await IncomingCallService.rejectCall(callId);
+              if (kDebugMode) {
+                debugPrint('❌ [HomeScreen] Call rejected');
+              }
+            },
+            icon: const Icon(Icons.call_end, color: Colors.red),
+            label: const Text(
+              'Từ chối',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+          // Accept button
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              await IncomingCallService.acceptCall(callId);
+              
+              if (kDebugMode) {
+                debugPrint('✅ [HomeScreen] Call accepted, joining channel: $channelName');
+              }
+              
+              // Navigate to VideoCallScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VideoCallScreen(
+                    channelName: channelName,
+                    userName: _auth.currentUser?.displayName ?? 'Me',
+                    userAvatar: _auth.currentUser?.photoURL,
+                    calleeName: callerName,
+                    calleeAvatar: callerAvatar,
+                    chatRoomId: chatRoomId,
+                    calleeUid: callerUid,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.video_call),
+            label: const Text('Trả lời'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _getConnectivity() {
@@ -88,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
+    IncomingCallService().stopListening();
     super.dispose();
   }
 

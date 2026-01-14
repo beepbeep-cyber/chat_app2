@@ -9,7 +9,7 @@ import '../configs/agora_configs.dart';
 import '../db/log_repository.dart';
 import '../models/log_model.dart';
 import '../resources/methods.dart'; // For timeForMessage
-import '../services/fcm_service.dart'; // For sending call notifications
+import '../services/incoming_call_service.dart'; // For sending call notifications WITHOUT FCM
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
@@ -20,6 +20,7 @@ class VideoCallScreen extends StatefulWidget {
   final bool isGroupCall;
   final String? chatRoomId;  // For sending call message to chat
   final String? calleeUid;   // For identifying callee
+  final String? callId;      // Call ID from Firestore (if joining existing call)
 
   const VideoCallScreen({
     Key? key,
@@ -31,6 +32,7 @@ class VideoCallScreen extends StatefulWidget {
     this.isGroupCall = false,
     this.chatRoomId,
     this.calleeUid,
+    this.callId,  // Optional - set if joining from notification
   }) : super(key: key);
 
   @override
@@ -47,10 +49,12 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   bool _isFrontCamera = true;
   Timer? _callTimer;
   int _callDuration = 0;
+  String? _currentCallId; // Track Firestore call ID for cleanup
 
   @override
   void initState() {
     super.initState();
+    _currentCallId = widget.callId; // If joining from notification
     initAgora();
   }
 
@@ -110,28 +114,29 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       ),
     );
     
-    // 🔔 Send call notification to callee
-    if (widget.calleeUid != null) {
+    // 🔔 Send call notification to callee (WITHOUT FCM - using Firestore)
+    if (widget.calleeUid != null && _currentCallId == null) {
+      // Only send if we're the caller (not joining from notification)
       await _sendCallNotification();
     }
   }
   
-  /// Send incoming call notification to callee
+  /// Send incoming call notification to callee (WITHOUT FCM)
+  /// Uses Firestore realtime listener instead
   Future<void> _sendCallNotification() async {
     try {
-      await FCMService.sendNotificationToUser(
-        userId: widget.calleeUid!,
-        title: '📹 Cuộc gọi video đến',
-        body: '${widget.userName} đang gọi video cho bạn',
-        data: {
-          'type': 'video_call',
-          'channelName': widget.channelName,
-          'callerName': widget.userName,
-          'callerAvatar': widget.userAvatar ?? '',
-          'chatRoomId': widget.chatRoomId ?? '',
-        },
+      final callId = await IncomingCallService.sendCall(
+        calleeUid: widget.calleeUid!,
+        callerName: widget.userName,
+        channelName: widget.channelName,
+        callerAvatar: widget.userAvatar,
+        chatRoomId: widget.chatRoomId,
       );
-      debugPrint('✅ [VideoCall] Notification sent to ${widget.calleeUid}');
+      
+      if (callId != null) {
+        _currentCallId = callId;
+        debugPrint('✅ [VideoCall] Call notification sent (Firestore), callId: $callId');
+      }
     } catch (e) {
       debugPrint('❌ [VideoCall] Failed to send notification: $e');
     }
@@ -196,6 +201,12 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   void _onCallEnd() async {
+    // Cleanup Firestore call document
+    if (_currentCallId != null) {
+      await IncomingCallService.cleanupCall(_currentCallId!);
+      debugPrint('🧹 [VideoCall] Cleaned up call: $_currentCallId');
+    }
+    
     // Save call log to SQLite
     await _saveCallLog();
     
