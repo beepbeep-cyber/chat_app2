@@ -174,7 +174,7 @@ class _CreateGroupState extends State<CreateGroup> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Group Name',
+                          'Tên nhóm',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

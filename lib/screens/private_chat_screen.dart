@@ -114,8 +114,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 controller: passwordController,
                 obscureText: obscurePassword,
                 decoration: InputDecoration(
-                  labelText: 'Password',
-                  hintText: 'Enter password (min 4 chars)',
+                  labelText: 'Mật khẩu',
+                  hintText: 'Nhập mật khẩu (tối thiểu 4 ký tự)',
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
@@ -134,8 +134,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 controller: confirmController,
                 obscureText: obscureConfirm,
                 decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  hintText: 'Re-enter password',
+                  labelText: 'Xác nhận mật khẩu',
+                  hintText: 'Nhập lại mật khẩu',
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility),
@@ -165,14 +165,14 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 
                 if (password.length < 4) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Password must be at least 4 characters')),
+                    const SnackBar(content: Text('Mật khẩu phải có ít nhất 4 ký tự')),
                   );
                   return;
                 }
                 
                 if (password != confirm) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Passwords do not match')),
+                    const SnackBar(content: Text('Mật khẩu không khớp')),
                   );
                   return;
                 }
@@ -193,7 +193,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              child: const Text('Set Password'),
+              child: const Text('Đặt mật khẩu'),
             ),
           ],
         ),
@@ -255,8 +255,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
             obscureText: obscurePassword,
             autofocus: true,
             decoration: InputDecoration(
-              labelText: 'Password',
-              hintText: 'Enter your password',
+              labelText: 'Mật khẩu',
+              hintText: 'Nhập mật khẩu của bạn',
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
@@ -864,7 +864,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 
                 if (newController.text.length < 4) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Password must be at least 4 characters')),
+                    const SnackBar(content: Text('Mật khẩu phải có ít nhất 4 ký tự')),
                   );
                   return;
                 }

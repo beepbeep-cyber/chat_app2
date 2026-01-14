@@ -82,7 +82,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Settings saved successfully'),
+            content: Text('Đã lưu cài đặt thành công'),
             backgroundColor: AppTheme.success,
             duration: Duration(seconds: 2),
           ),
@@ -184,7 +184,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.gray50,
         appBar: AppBar(
-          title: const Text('Chat Settings'),
+          title: const Text('Cài đặt chat'),
           backgroundColor: AppTheme.primaryDark,
           foregroundColor: Colors.white,
           elevation: 0,
@@ -523,7 +523,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Delete All'),
+            child: const Text('Xóa tất cả'),
           ),
         ],
       ),

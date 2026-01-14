@@ -81,7 +81,7 @@ class _SettingState extends State<Setting> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Biometric authentication is not available on this device'),
+            content: const Text('Xác thực sinh trắc học không khả dụng trên thiết bị này'),
             backgroundColor: AppTheme.warning,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
@@ -97,7 +97,7 @@ class _SettingState extends State<Setting> {
       
       try {
         final authenticated = await _biometricService.authenticate(
-          localizedReason: 'Authenticate to enable biometric lock',
+          localizedReason: 'Xác thực để bật khóa sinh trắc học',
         );
         
         if (kDebugMode) { debugPrint('🔐 [Settings] Authentication result: $authenticated'); }
@@ -112,7 +112,7 @@ class _SettingState extends State<Setting> {
             if (kDebugMode) { debugPrint('✅ [Settings] Biometric lock enabled!'); }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Biometric lock enabled successfully'),
+                content: const Text('Đã bật khóa sinh trắc học thành công'),
                 backgroundColor: AppTheme.success,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -123,7 +123,7 @@ class _SettingState extends State<Setting> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Authentication failed. Please try again.'),
+                content: const Text('Xác thực thất bại. Vui lòng thử lại.'),
                 backgroundColor: AppTheme.error,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -155,7 +155,7 @@ class _SettingState extends State<Setting> {
         if (kDebugMode) { debugPrint('✅ [Settings] Biometric lock disabled!'); }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Biometric lock disabled'),
+            content: const Text('Đã tắt khóa sinh trắc học'),
             backgroundColor: AppTheme.textSecondary,
             behavior: SnackBarBehavior.floating,
           ),
@@ -250,7 +250,7 @@ class _SettingState extends State<Setting> {
             Icon(Icons.logout, color: Colors.red[700], size: 28),
             const SizedBox(width: 12),
             Text(
-              'Confirm Logout',
+              'Xác nhận đăng xuất',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -260,7 +260,7 @@ class _SettingState extends State<Setting> {
           ],
         ),
         content: Text(
-          'Are you sure you want to log out?',
+          'Bạn có chắc muốn đăng xuất?',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[700],
@@ -271,7 +271,7 @@ class _SettingState extends State<Setting> {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
-              'Cancel',
+              'Hủy',
               style: TextStyle(color: Colors.grey[600], fontSize: 15),
             ),
           ),
@@ -301,7 +301,7 @@ class _SettingState extends State<Setting> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
-            child: const Text('Logout', style: TextStyle(fontSize: 15)),
+            child: const Text('Đăng xuất', style: TextStyle(fontSize: 15)),
           ),
         ],
       ),
@@ -688,7 +688,7 @@ class _SettingState extends State<Setting> {
                                   
                                   // User Name
                                   Text(
-                                    map['name'] ?? 'User Name',
+                                    map['name'] ?? 'Tên người dùng',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 24,
@@ -1269,7 +1269,7 @@ class _SettingState extends State<Setting> {
                   }
                 },
                 icon: Icon(Icons.open_in_new, size: 18),
-                label: const Text('Get Free API Key'),
+                label: const Text('Lấy API Key Miễn Phí'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.purple[700],
                   side: BorderSide(color: Colors.purple[300]!),
@@ -1284,7 +1284,7 @@ class _SettingState extends State<Setting> {
               TextField(
                 controller: apiKeyController,
                 decoration: InputDecoration(
-                  labelText: 'Paste your API Key',
+                  labelText: 'Dán API Key của bạn',
                   hintText: 'AIza...',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -1305,7 +1305,7 @@ class _SettingState extends State<Setting> {
               
               // Instructions
               Text(
-                'Steps:\n1. Click "Get Free API Key" above\n2. Sign in with Google\n3. Click "Create API Key"\n4. Copy and paste here',
+                'Các bước:\n1. Nhấp "Lấy API Key Miễn Phí" ở trên\n2. Đăng nhập bằng Google\n3. Nhấp "Tạo API Key"\n4. Sao chép và dán vào đây',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.5),
               ),
             ],
@@ -1319,7 +1319,7 @@ class _SettingState extends State<Setting> {
                 Navigator.pop(context);
                 await _clearApiKey();
               },
-              child: Text('Clear', style: TextStyle(color: Colors.red[600])),
+              child: Text('Xóa', style: TextStyle(color: Colors.red[600])),
             ),
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1337,7 +1337,7 @@ class _SettingState extends State<Setting> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Save'),
+            child: const Text('Lưu'),
           ),
         ],
       ),
@@ -1348,7 +1348,7 @@ class _SettingState extends State<Setting> {
     if (apiKey.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter an API key'),
+          content: Text('Vui lòng nhập API key'),
           backgroundColor: AppTheme.warning,
         ),
       );

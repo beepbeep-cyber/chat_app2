@@ -177,7 +177,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Reset Password',
+          'Đặt lại mật khẩu',
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.w600,
@@ -299,7 +299,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               prefixIcon: Icon(Icons.email_outlined, color: AppTheme.gray600),
-                              hintText: 'Enter your email',
+                              hintText: 'Nhập email của bạn',
                               hintStyle: TextStyle(color: AppTheme.gray400),
                               filled: true,
                               fillColor: AppTheme.gray50,
@@ -405,7 +405,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ? 'Sending...'
                           : emailSent
                               ? (canResendEmail ? 'Resend Email' : 'Resend in ${resendCooldown}s')
-                              : 'Send Reset Link',
+                              : 'Gửi liên kết đặt lại',
                       style: const TextStyle(fontSize: 16),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -436,7 +436,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     },
                     icon: const Icon(Icons.arrow_back),
                     label: const Text(
-                      'Back to Login',
+                      'Quay lại đăng nhập',
                       style: TextStyle(fontSize: 16),
                     ),
                     style: OutlinedButton.styleFrom(
