@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../resources/methods.dart';
 import '../../services/ai_chat_service.dart';
@@ -1494,242 +1495,264 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     final TextEditingController apiKeyController = TextEditingController(
       text: _apiKey ?? '',
     );
-    bool obscureKey = true;
     final remoteConfig = RemoteConfigService();
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                 ),
-                child: const Icon(Icons.key, color: Colors.white, size: 24),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'AI Settings',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryDark,
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Current API Key Source Status
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AIChatService.isInitialized 
-                        ? AppTheme.success.withValues(alpha: 0.1)
-                        : AppTheme.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AIChatService.isInitialized 
-                          ? AppTheme.success.withValues(alpha: 0.3)
-                          : AppTheme.warning.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        AIChatService.isInitialized ? Icons.check_circle : Icons.warning,
-                        color: AIChatService.isInitialized ? AppTheme.success : AppTheme.warning,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Current Status',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppTheme.gray500,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              AIChatService.apiKeySource,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AIChatService.isInitialized ? AppTheme.success : AppTheme.warning,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Server Key Option (if available)
-                if (remoteConfig.hasApiKey && _apiKey != null && _apiKey!.isNotEmpty) ...[
-                  Text(
-                    'API Key Options',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.gray800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () async {
-                      // Clear custom key and use server key
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.remove(_apiKeyPrefKey);
-                      await AIChatService.clearCustomApiKey();
-                      setState(() {
-                        _apiKey = null;
-                      });
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Switched to server API key'),
-                          backgroundColor: AppTheme.success,
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.gray100,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.gray300),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.cloud, color: AppTheme.accent, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Use Server API Key',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.gray800,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Icon(Icons.arrow_forward_ios, color: AppTheme.gray400, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Custom Key Input
-                Text(
-                  'Or enter your own API key:',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.gray700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: apiKeyController,
-                  obscureText: obscureKey,
-                  decoration: InputDecoration(
-                    hintText: 'AIza...',
-                    prefixIcon: const Icon(Icons.vpn_key_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(obscureKey ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setDialogState(() => obscureKey = !obscureKey),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: AppTheme.accent, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Get your free API key from:\nmakersuite.google.com/app/apikey',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.accent,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              child: const Icon(Icons.key, color: Colors.white, size: 24),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: AppTheme.gray600)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final key = apiKeyController.text.trim();
-                if (key.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter an API key')),
-                  );
-                  return;
-                }
-                
-                await _saveApiKey(key);
-                Navigator.pop(context);
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Custom API key saved!'),
-                    backgroundColor: AppTheme.success,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            const SizedBox(height: 16),
+            Text(
+              'Gemini API Key',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primaryDark,
               ),
-              child: const Text('Save Custom Key'),
             ),
           ],
         ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Current Status
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AIChatService.isInitialized 
+                      ? AppTheme.success.withValues(alpha: 0.1)
+                      : AppTheme.warning.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AIChatService.isInitialized 
+                        ? AppTheme.success
+                        : AppTheme.warning,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      AIChatService.isInitialized ? Icons.check_circle : Icons.warning,
+                      color: AIChatService.isInitialized ? AppTheme.success : AppTheme.warning,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        AIChatService.isInitialized 
+                            ? '✓ AI Bot đang hoạt động'
+                            : '⚠️ Chưa có API Key',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AIChatService.isInitialized ? AppTheme.success : AppTheme.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Info banner
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Lấy API key miễn phí để tránh giới hạn rate limit',
+                        style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Get API Key button
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final url = Uri.parse('https://aistudio.google.com/app/apikey');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: const Text('Lấy API Key Miễn Phí'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF6366F1),
+                  side: const BorderSide(color: Color(0xFF6366F1)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // API Key input
+              TextField(
+                controller: apiKeyController,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Dán API Key của bạn',
+                  hintText: 'AIza...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+                  ),
+                  prefixIcon: const Icon(Icons.vpn_key),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.paste),
+                    onPressed: () async {
+                      final data = await Clipboard.getData('text/plain');
+                      if (data?.text != null) {
+                        apiKeyController.text = data!.text!;
+                      }
+                    },
+                  ),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 12),
+              
+              // Instructions
+              Text(
+                'Các bước:\n'
+                '1. Nhấp "Lấy API Key Miễn Phí" ở trên\n'
+                '2. Đăng nhập bằng Google\n'
+                '3. Nhấp "Create API Key"\n'
+                '4. Sao chép và dán vào đây',
+                style: TextStyle(fontSize: 12, color: AppTheme.gray600, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          // Clear button (if has custom key)
+          if (_apiKey != null && _apiKey!.isNotEmpty)
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _clearApiKey();
+              },
+              child: Text('Xóa', style: TextStyle(color: Colors.red[600])),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: AppTheme.gray600)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final key = apiKeyController.text.trim();
+              if (key.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Vui lòng nhập API key'),
+                    backgroundColor: AppTheme.warning,
+                  ),
+                );
+                return;
+              }
+              
+              // Validate API key format
+              if (!key.startsWith('AIza')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('❌ API key không hợp lệ!\n\nKey phải bắt đầu bằng "AIza"'),
+                    backgroundColor: AppTheme.error,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+                return;
+              }
+              
+              Navigator.pop(context);
+              await _saveApiKey(key);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6366F1),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Lưu'),
+          ),
+        ],
       ),
     );
+  }
+  
+  Future<void> _clearApiKey() async {
+    try {
+      // Clear from Firestore
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
+        'geminiApiKey': FieldValue.delete(),
+      });
+      
+      // Clear from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_apiKeyPrefKey);
+      
+      // Clear from AIChatService and revert to Remote Config
+      await AIChatService.clearCustomApiKey();
+      
+      setState(() {
+        _apiKey = null;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ API Key đã xóa. Đang dùng Server Key.'),
+            backgroundColor: AppTheme.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error clearing API key: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi xóa API key: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
   
   void _testApiKey() async {
