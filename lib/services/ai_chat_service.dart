@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' show Random, min;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -482,6 +483,167 @@ class AIChatService {
     
     // Try to send with retry on different keys
     return await _sendWithRetry(message, maxRetries: _apiKeys.length > 0 ? _apiKeys.length : 1);
+  }
+  
+  /// Send message with image (Vision API)
+  static Future<AIChatResponse> sendMessageWithImage(String message, File imageFile) async {
+    if (!isInitialized) {
+      return AIChatResponse(
+        success: false,
+        message: '⚠️ AI chưa được cấu hình.\n\nVui lòng thiết lập API key trong Settings.',
+        error: 'NO_API_KEY',
+      );
+    }
+    
+    // Check global cooldown first
+    if (_isInGlobalCooldown()) {
+      final waitTime = globalCooldownRemaining;
+      return AIChatResponse(
+        success: false,
+        message: '🔴 Server đang quá tải!\n\n⏳ Tự động thử lại sau $waitTime giây.',
+        error: 'GLOBAL_COOLDOWN',
+        cooldownSeconds: waitTime,
+      );
+    }
+    
+    // Check client-side rate limit
+    if (!_canMakeRequest()) {
+      final waitTime = _getClientWaitTime();
+      return AIChatResponse(
+        success: false,
+        message: '⏳ Bạn đang gửi quá nhanh!\n\nChờ $waitTime giây rồi thử lại.',
+        error: 'CLIENT_RATE_LIMIT',
+        cooldownSeconds: waitTime,
+      );
+    }
+    
+    // Record request
+    _requestTimestamps.add(DateTime.now());
+    
+    // Send with vision
+    return await _sendRequestWithImage(message, imageFile);
+  }
+  
+  /// Send request with image
+  static Future<AIChatResponse> _sendRequestWithImage(String message, File imageFile) async {
+    final apiKey = _activeApiKey;
+    if (apiKey == null) {
+      return AIChatResponse(
+        success: false,
+        message: '⚠️ Không có API key.',
+        error: 'NO_API_KEY',
+      );
+    }
+    
+    try {
+      // Convert image to base64
+      final imageBytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+      
+      // Get image MIME type
+      final extension = imageFile.path.split('.').last.toLowerCase();
+      final mimeType = extension == 'png' ? 'image/png' : 'image/jpeg';
+      
+      debugPrint('📸 [Vision Request] Sending image...');
+      debugPrint('   Image size: ${imageBytes.length} bytes');
+      debugPrint('   MIME type: $mimeType');
+      
+      final url = '$_baseUrl/models/$_model:generateContent?key=$apiKey';
+      
+      final requestBody = {
+        'contents': [
+          {
+            'parts': [
+              {'text': message},
+              {
+                'inline_data': {
+                  'mime_type': mimeType,
+                  'data': base64Image,
+                }
+              }
+            ]
+          }
+        ],
+        'generationConfig': {
+          'temperature': 0.7,
+          'topK': 40,
+          'topP': 0.95,
+          'maxOutputTokens': 2048,
+        },
+      };
+      
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      ).timeout(const Duration(seconds: 60));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String aiMessage = '';
+        
+        if (data['candidates'] != null && data['candidates'].isNotEmpty) {
+          final candidate = data['candidates'][0];
+          if (candidate['content']?['parts']?.isNotEmpty == true) {
+            aiMessage = candidate['content']['parts'][0]['text'] ?? '';
+          }
+        }
+        
+        if (aiMessage.isEmpty) {
+          return AIChatResponse(
+            success: false,
+            message: '❓ Không nhận được phản hồi. Thử lại nhé!',
+            error: 'EMPTY_RESPONSE',
+          );
+        }
+        
+        return AIChatResponse(success: true, message: aiMessage);
+        
+      } else if (response.statusCode == 429) {
+        debugPrint('⏰ [Vision Response] Rate limited (429)');
+        
+        if (_customApiKey != null && _customApiKey!.isNotEmpty) {
+          return AIChatResponse(
+            success: false,
+            message: '🔴 API key của bạn đã vượt giới hạn!\n\n⏳ Vui lòng chờ 1 phút rồi thử lại.',
+            error: 'CUSTOM_KEY_RATE_LIMITED',
+            cooldownSeconds: 60,
+          );
+        }
+        
+        return AIChatResponse(
+          success: false,
+          message: '🔴 Server đang bận...',
+          error: 'RATE_LIMIT',
+        );
+        
+      } else {
+        debugPrint('❌ [Vision Response] Error ${response.statusCode}');
+        debugPrint('   Response body: ${response.body}');
+        
+        return AIChatResponse(
+          success: false,
+          message: '❌ Lỗi: Không thể phân tích ảnh.',
+          error: 'API_ERROR',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Vision request error: $e');
+      
+      if (e.toString().contains('TimeoutException')) {
+        return AIChatResponse(
+          success: false,
+          message: '⏱️ Timeout. Ảnh có thể quá lớn. Thử lại nhé!',
+          error: 'TIMEOUT',
+        );
+      }
+      
+      return AIChatResponse(
+        success: false,
+        message: '📡 Lỗi mạng. Kiểm tra kết nối internet.',
+        error: 'NETWORK_ERROR',
+      );
+    }
   }
   
   /// Get client-side wait time

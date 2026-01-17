@@ -775,13 +775,72 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              child: SelectableText(
-                map['message'] ?? '',
-                style: TextStyle(
-                  color: isUser ? Colors.white : AppTheme.gray800,
-                  fontSize: 15,
-                  height: 1.4,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Show image if available
+                  if (map['type'] == 'image' && map['imageUrl'] != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        map['imageUrl'],
+                        width: 200,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 200,
+                            height: 200,
+                            alignment: Alignment.center,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isUser ? Colors.white : AppTheme.accent,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 200,
+                            height: 200,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppTheme.gray200,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.broken_image, size: 40, color: AppTheme.gray500),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Image not available',
+                                  style: TextStyle(color: AppTheme.gray600, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    if (map['message'] != null && 
+                        map['message'].toString().isNotEmpty && 
+                        map['message'] != '📸 [Image]')
+                      const SizedBox(height: 8),
+                  ],
+                  // Show text message
+                  if (map['message'] != null && 
+                      map['message'].toString().isNotEmpty &&
+                      map['message'] != '📸 [Image]')
+                    SelectableText(
+                      map['message'] ?? '',
+                      style: TextStyle(
+                        color: isUser ? Colors.white : AppTheme.gray800,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -1008,11 +1067,79 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     );
   }
   
-  // Image picker
+  // Image picker with option to choose gallery or camera
   Future<void> _pickImage() async {
     try {
+      // Show bottom sheet to choose source
+      final ImageSource? source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.gray300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Choose image source',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryDark,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.camera_alt, color: AppTheme.accent),
+                  ),
+                  title: const Text('Camera'),
+                  subtitle: const Text('Take a photo'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.photo_library, color: AppTheme.accent),
+                  ),
+                  title: const Text('Gallery'),
+                  subtitle: const Text('Choose from gallery'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      );
+      
+      if (source == null) return;
+      
       final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
@@ -1109,7 +1236,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
 
   void _sendMessage() async {
     final message = _message.text.trim();
-    if (message.isEmpty || !AIChatService.isInitialized) return;
+    final hasImage = _selectedImage != null;
+    
+    // Validation: either text or image must be provided
+    if (message.isEmpty && !hasImage) return;
+    if (!AIChatService.isInitialized) return;
     
     // Check cooldown before sending
     if (_isCooldown && _cooldownSeconds > 0) {
@@ -1123,13 +1254,54 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
       return;
     }
 
+    // Capture image reference before clearing state
+    final imageToSend = _selectedImage;
+    
     setState(() {
       _message.clear();
+      _selectedImage = null; // Clear image preview
       _isTyping = true;
       _showSuggestions = false;
     });
 
     HapticFeedback.lightImpact();
+
+    String? imageUrl;
+    
+    // Upload image to Firebase Storage if present
+    if (imageToSend != null) {
+      try {
+        final fileName = 'chatbot_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('chat_images')
+            .child(_auth.currentUser!.uid)
+            .child(fileName);
+        
+        await storageRef.putFile(imageToSend);
+        imageUrl = await storageRef.getDownloadURL();
+        
+        if (kDebugMode) {
+          debugPrint('✅ Image uploaded to Firebase Storage: $imageUrl');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Failed to upload image: $e');
+        }
+        setState(() {
+          _isTyping = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể upload ảnh: $e'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
 
     // Save user message to Firestore
     await _firestore
@@ -1138,14 +1310,20 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
         .collection('chatvsBot')
         .add({
       'sendBy': widget.user.displayName,
-      'message': message,
-      'type': 'text',
+      'message': message.isEmpty ? '📸 [Image]' : message,
+      'type': hasImage ? 'image' : 'text',
+      'imageUrl': imageUrl,
       'time': timeForMessage(DateTime.now().toString()),
       'timeStamp': DateTime.now(),
     });
 
-    // Get AI response
-    final response = await AIChatService.sendMessage(message);
+    // Get AI response (with or without image)
+    final response = hasImage
+        ? await AIChatService.sendMessageWithImage(
+            message.isEmpty ? 'Hãy phân tích ảnh này' : message,
+            imageToSend!,
+          )
+        : await AIChatService.sendMessage(message);
     
     // Update cooldown if rate limited
     if (response.isRateLimited && response.cooldownSeconds != null) {
