@@ -255,9 +255,9 @@ class _ConversationListState extends State<ConversationList>
   }
 
   Future<void> _moveToPrivate() async {
-    final chatRoomId = widget.chatHistory['datatype'] == 'group'
-        ? widget.chatHistory['uid']
-        : ChatRoomId().chatRoomId(widget.user.displayName, widget.chatHistory['name']);
+    // ✅ FIX: Use uid from chatHistory (document ID), NOT ChatRoomId
+    // chatHistory document ID = uid of the other user (for p2p) or group uid
+    final chatRoomId = widget.chatHistory['uid'];  // Always use uid field
     
     final success = await PrivateChatService.addToPrivate(
       chatRoomId: chatRoomId,
