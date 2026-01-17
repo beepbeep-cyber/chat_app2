@@ -48,15 +48,80 @@ class GeminiApiTester {
         debugPrint('   Starts with AIza: ${apiKey.startsWith('AIza')}');
         debugPrint('');
         
-        // Test the API key directly with gemini-1.5-flash-latest first (more reliable)
-        debugPrint('🚀 Testing API key with Google Gemini API...');
-        debugPrint('   Model: gemini-1.5-flash-latest (Free Tier)');
+        // FIRST: List available models for this API key
+        debugPrint('📋 Listing available models for this API key...');
         debugPrint('');
         
         bool firstTestFailed = false;
         String firstTestModel = 'gemini-1.5-flash-latest';
-        
         var url = 'https://generativelanguage.googleapis.com/v1beta/models/$firstTestModel:generateContent?key=$apiKey';
+        
+        try {
+          final listUrl = 'https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey';
+          final listResponse = await http.get(Uri.parse(listUrl)).timeout(const Duration(seconds: 10));
+          
+          if (listResponse.statusCode == 200) {
+            final listData = jsonDecode(listResponse.body);
+            final models = listData['models'] as List?;
+            
+            if (models != null && models.isNotEmpty) {
+              debugPrint('✅ Available models (${models.length} total):');
+              
+              final supportedModels = <String>[];
+              for (var model in models) {
+                final name = model['name'] as String?;
+                final supportedMethods = model['supportedGenerationMethods'] as List?;
+                
+                if (name != null) {
+                  final modelName = name.replaceFirst('models/', '');
+                  final supportsGenerate = supportedMethods?.contains('generateContent') ?? false;
+                  
+                  if (supportsGenerate) {
+                    supportedModels.add(modelName);
+                    debugPrint('   ✓ $modelName');
+                  }
+                }
+              }
+              
+              debugPrint('');
+              
+              if (supportedModels.isEmpty) {
+                debugPrint('❌ NO models support generateContent!');
+                debugPrint('💡 This API key cannot be used for chat.');
+                debugPrint('💡 Create a NEW API key at: https://aistudio.google.com/app/apikey');
+                debugPrint('═══════════════════════════════════════════');
+                debugPrint('');
+                return;
+              }
+              
+              debugPrint('📌 Using model: ${supportedModels.first}');
+              debugPrint('');
+              
+              // Use the first available model
+              firstTestModel = supportedModels.first;
+              url = 'https://generativelanguage.googleapis.com/v1beta/models/$firstTestModel:generateContent?key=$apiKey';
+              
+            } else {
+              debugPrint('❌ No models returned from API');
+              debugPrint('💡 Your API key may be invalid or restricted.');
+              debugPrint('═══════════════════════════════════════════');
+              debugPrint('');
+              return;
+            }
+          } else {
+            debugPrint('⚠️ Failed to list models (${listResponse.statusCode})');
+            debugPrint('   Continuing with default test...');
+            debugPrint('');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error listing models: $e');
+          debugPrint('   Continuing with default test...');
+          debugPrint('');
+        }
+        
+        // Test the API key
+        debugPrint('🚀 Testing API key with model: $firstTestModel');
+        debugPrint('');
         
         final requestBody = {
           'contents': [
