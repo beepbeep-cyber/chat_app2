@@ -48,13 +48,13 @@ class GeminiApiTester {
         debugPrint('   Starts with AIza: ${apiKey.startsWith('AIza')}');
         debugPrint('');
         
-        // Test the API key directly with gemini-1.5-flash first (more reliable)
+        // Test the API key directly with gemini-1.5-flash-latest first (more reliable)
         debugPrint('🚀 Testing API key with Google Gemini API...');
-        debugPrint('   Model: gemini-1.5-flash (Free Tier)');
+        debugPrint('   Model: gemini-1.5-flash-latest (Free Tier)');
         debugPrint('');
         
         bool firstTestFailed = false;
-        String firstTestModel = 'gemini-1.5-flash';
+        String firstTestModel = 'gemini-1.5-flash-latest';
         
         var url = 'https://generativelanguage.googleapis.com/v1beta/models/$firstTestModel:generateContent?key=$apiKey';
         
@@ -183,6 +183,48 @@ class GeminiApiTester {
               debugPrint('💡 Your API key is INVALID:');
               debugPrint('   - Check you copied the full key');
               debugPrint('   - Get new key: https://aistudio.google.com/app/apikey');
+            }
+          } catch (e) {
+            debugPrint('   Raw response: ${response.body}');
+          }
+          
+        } else if (response.statusCode == 404) {
+          debugPrint('🔴 MODEL NOT FOUND (404)');
+          debugPrint('');
+          
+          try {
+            final errorData = jsonDecode(response.body);
+            final errorMsg = errorData['error']?['message'] ?? 'Unknown';
+            debugPrint('   Error: $errorMsg');
+            debugPrint('');
+            debugPrint('🔧 Trying alternative models...');
+            
+            // Try gemini-pro (stable fallback)
+            final fallbackModel = 'gemini-pro';
+            debugPrint('   Testing: $fallbackModel');
+            
+            final fallbackUrl = 'https://generativelanguage.googleapis.com/v1beta/models/$fallbackModel:generateContent?key=$apiKey';
+            
+            final fallbackResponse = await http.post(
+              Uri.parse(fallbackUrl),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode(requestBody),
+            ).timeout(const Duration(seconds: 10));
+            
+            debugPrint('   HTTP Status: ${fallbackResponse.statusCode}');
+            
+            if (fallbackResponse.statusCode == 200) {
+              debugPrint('');
+              debugPrint('✅ SUCCESS! Model $fallbackModel WORKS!');
+              debugPrint('');
+              debugPrint('💡 Solution: Switch app to use $fallbackModel');
+              
+            } else {
+              debugPrint('');
+              debugPrint('❌ Model $fallbackModel also failed (${fallbackResponse.statusCode})');
+              debugPrint('');
+              debugPrint('💡 Your API key may not have access to any models.');
+              debugPrint('💡 Try creating a new API key.');
             }
           } catch (e) {
             debugPrint('   Raw response: ${response.body}');
