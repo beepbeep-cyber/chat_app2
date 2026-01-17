@@ -48,11 +48,15 @@ class GeminiApiTester {
         debugPrint('   Starts with AIza: ${apiKey.startsWith('AIza')}');
         debugPrint('');
         
-        // Test the API key directly
+        // Test the API key directly with gemini-1.5-flash first (more reliable)
         debugPrint('🚀 Testing API key with Google Gemini API...');
+        debugPrint('   Model: gemini-1.5-flash (Free Tier)');
         debugPrint('');
         
-        final url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey';
+        bool firstTestFailed = false;
+        String firstTestModel = 'gemini-1.5-flash';
+        
+        var url = 'https://generativelanguage.googleapis.com/v1beta/models/$firstTestModel:generateContent?key=$apiKey';
         
         final requestBody = {
           'contents': [
@@ -86,6 +90,7 @@ class GeminiApiTester {
         
         if (response.statusCode == 200) {
           debugPrint('✅ API KEY WORKS PERFECTLY!');
+          debugPrint('   Model: $firstTestModel');
           debugPrint('');
           
           final data = jsonDecode(response.body);
@@ -96,10 +101,11 @@ class GeminiApiTester {
           
           debugPrint('');
           debugPrint('💡 Result: Your API key is VALID and NOT rate limited!');
-          debugPrint('💡 Problem must be in app logic, not the API key itself.');
+          debugPrint('💡 Model $firstTestModel works fine.');
           
         } else if (response.statusCode == 429) {
-          debugPrint('🔴 RATE LIMITED (429)');
+          firstTestFailed = true;
+          debugPrint('🔴 RATE LIMITED (429) for $firstTestModel');
           debugPrint('');
           
           try {
@@ -107,9 +113,50 @@ class GeminiApiTester {
             final errorMsg = errorData['error']?['message'] ?? 'Unknown';
             debugPrint('   Error message: $errorMsg');
             
-            if (errorMsg.contains('quota') || errorMsg.contains('exceeded')) {
+            // Check if it's quota limit = 0
+            if (errorMsg.contains('limit: 0') || errorMsg.contains('quota exceeded')) {
               debugPrint('');
-              debugPrint('💡 Your API key HAS exceeded quota limits:');
+              debugPrint('🚨 CRITICAL: Your API key has NO free tier quota!');
+              debugPrint('   This means:');
+              debugPrint('   - Model $firstTestModel is not available on free tier');
+              debugPrint('   - Or your Google Account exceeded all free quotas');
+              debugPrint('');
+              debugPrint('🔧 Let\'s try gemini-2.0-flash-exp (experimental)...');
+              debugPrint('');
+              
+              // Try gemini-2.0-flash-exp
+              final expModel = 'gemini-2.0-flash-exp';
+              final expUrl = 'https://generativelanguage.googleapis.com/v1beta/models/$expModel:generateContent?key=$apiKey';
+              
+              final expResponse = await http.post(
+                Uri.parse(expUrl),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode(requestBody),
+              ).timeout(const Duration(seconds: 10));
+              
+              debugPrint('📡 Response for $expModel:');
+              debugPrint('   HTTP Status: ${expResponse.statusCode}');
+              
+              if (expResponse.statusCode == 200) {
+                debugPrint('');
+                debugPrint('✅ SUCCESS! Model $expModel WORKS!');
+                debugPrint('');
+                debugPrint('💡 Solution: Switch app to use $expModel');
+                debugPrint('💡 This is a free experimental model.');
+                
+              } else if (expResponse.statusCode == 429) {
+                debugPrint('');
+                debugPrint('❌ Model $expModel also rate limited.');
+                debugPrint('');
+                debugPrint('🔧 Final Solutions:');
+                debugPrint('   1. Create NEW Google Account');
+                debugPrint('   2. Get API key from new account');
+                debugPrint('   3. Or enable billing (paid tier)');
+              }
+              
+            } else if (errorMsg.contains('quota') || errorMsg.contains('exceeded')) {
+              debugPrint('');
+              debugPrint('💡 Your API key exceeded temporary rate limits:');
               debugPrint('   - Free tier: 15 requests/minute');
               debugPrint('   - Daily: 1,500 requests/day');
               debugPrint('');

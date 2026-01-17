@@ -22,7 +22,7 @@ class AIChatService {
   static int _currentKeyIndex = 0;
   static String? _customApiKey; // User's personal key (highest priority)
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-  static String _model = 'gemini-2.0-flash';
+  static String _model = 'gemini-1.5-flash';
   
   // Track which keys are rate limited
   static final Map<int, DateTime> _rateLimitedKeys = {};
@@ -51,7 +51,7 @@ class AIChatService {
     'gemini-pro',
   ];
   
-  static const String _defaultModel = 'gemini-2.0-flash';
+  static const String _defaultModel = 'gemini-1.5-flash';
 
   /// Initialize with custom API key
   static void initialize(String apiKey) {
