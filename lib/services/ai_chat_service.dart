@@ -500,7 +500,21 @@ class AIChatService {
         return result;
       }
       
-      // If rate limited, try next key
+      // If rate limited with custom API key - cannot retry
+      if (result.error == 'RATE_LIMIT' && _customApiKey != null && _customApiKey!.isNotEmpty) {
+        debugPrint('🔴 Custom API key rate limited - cannot switch');
+        return AIChatResponse(
+          success: false,
+          message: '🔴 API key của bạn đã vượt giới hạn!\n\n'
+              '⏳ Vui lòng chờ 1 phút rồi thử lại.\n\n'
+              '💡 Hoặc tạo API key mới tại:\n'
+              'https://aistudio.google.com/app/apikey',
+          error: 'CUSTOM_KEY_RATE_LIMITED',
+          cooldownSeconds: 60,
+        );
+      }
+      
+      // If rate limited with server keys, try next key
       if (result.error == 'RATE_LIMIT' && _apiKeys.length > 1) {
         _markKeyAsLimited();
         
@@ -768,5 +782,6 @@ class AIChatResponse {
       error == 'RATE_LIMIT' || 
       error == 'ALL_KEYS_LIMITED' || 
       error == 'GLOBAL_COOLDOWN' ||
-      error == 'CLIENT_RATE_LIMIT';
+      error == 'CLIENT_RATE_LIMIT' ||
+      error == 'CUSTOM_KEY_RATE_LIMITED';
 }
