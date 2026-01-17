@@ -7,6 +7,7 @@ import 'package:my_porject/services/private_chat_service.dart';
 import 'package:my_porject/screens/chat_screen.dart';
 import 'package:my_porject/widgets/page_transitions.dart';
 import 'package:my_porject/widgets/animated_avatar.dart';
+import 'package:my_porject/resources/methods.dart';  // ✅ Import ChatRoomId
 
 /// Private Chat Screen - Hiển thị các đoạn chat được bảo mật bằng mật khẩu
 class PrivateChatScreen extends StatefulWidget {
@@ -700,7 +701,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     );
   }
 
-  void _openPrivateChat(Map<String, dynamic> chat, String chatRoomId) async {
+  void _openPrivateChat(Map<String, dynamic> chat, String docId) async {
     // Get chat details from Firestore
     try {
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -715,12 +716,21 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         
         if (userDoc.docs.isNotEmpty) {
           final userMap = userDoc.docs.first.data();
+          
+          // ✅ FIX: Generate correct chatRoomId for messages
+          // docId = uid of other user (used for chatHistory)
+          // chatRoomId = name-based ID (used for messages)
+          final correctChatRoomId = ChatRoomId().chatRoomId(
+            widget.user.displayName,
+            chat['chatName'],
+          );
+          
           if (mounted) {
             Navigator.push(
               context,
               SlideRightRoute(
                 page: ChatScreen(
-                  chatRoomId: chatRoomId,
+                  chatRoomId: correctChatRoomId,  // ✅ Use name-based ID for messages
                   userMap: userMap,
                   user: widget.user,
                   isDeviceConnected: widget.isDeviceConnected,
