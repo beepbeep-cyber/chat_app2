@@ -928,14 +928,13 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -946,16 +945,17 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
             // Image preview (if selected)
             if (_selectedImage != null)
               Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.gray100,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppTheme.gray50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.gray200),
                 ),
                 child: Row(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       child: Image.file(
                         _selectedImage!,
                         width: 60,
@@ -965,112 +965,239 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'Image selected',
-                        style: TextStyle(
-                          color: AppTheme.gray700,
-                          fontSize: 14,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Image selected',
+                            style: TextStyle(
+                              color: AppTheme.gray800,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Ready to send',
+                            style: TextStyle(
+                              color: AppTheme.gray500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: AppTheme.gray600),
-                      onPressed: () {
-                        setState(() {
-                          _selectedImage = null;
-                        });
-                      },
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.close, color: AppTheme.error, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _selectedImage = null;
+                          });
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
             
-            Row(
-              children: [
-                // Camera button
-                IconButton(
-                  icon: Icon(Icons.camera_alt, color: AppTheme.accent),
-                  onPressed: AIChatService.isInitialized ? _pickImage : null,
+            // Recording indicator
+            if (_isRecording)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.red.withValues(alpha: 0.1),
+                      Colors.red.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                 ),
-                // Mic button (hold to record)
-                GestureDetector(
-                  onLongPressStart: (_) => _startRecording(),
-                  onLongPressEnd: (_) => _stopRecording(),
-                  child: Container(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Recording... Release to send',
+                        style: TextStyle(
+                          color: Colors.red[700],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.mic, color: Colors.red[700], size: 20),
+                  ],
+                ),
+              ),
+            
+            // Input row
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Camera button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AIChatService.isInitialized
+                          ? AppTheme.accent.withValues(alpha: 0.1)
+                          : AppTheme.gray200,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.camera_alt_rounded,
+                        color: AIChatService.isInitialized
+                            ? AppTheme.accent
+                            : AppTheme.gray400,
+                      ),
+                      onPressed: AIChatService.isInitialized ? _pickImage : null,
+                      padding: const EdgeInsets.all(12),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // Voice button (hold to record)
+                  GestureDetector(
+                    onLongPressStart: AIChatService.isInitialized ? (_) => _startRecording() : null,
+                    onLongPressEnd: AIChatService.isInitialized ? (_) => _stopRecording() : null,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: _isRecording
+                            ? LinearGradient(
+                                colors: [Colors.red[400]!, Colors.red[600]!],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: _isRecording
+                            ? null
+                            : (AIChatService.isInitialized
+                                ? AppTheme.accent.withValues(alpha: 0.1)
+                                : AppTheme.gray200),
+                        shape: BoxShape.circle,
+                        boxShadow: _isRecording
+                            ? [
+                                BoxShadow(
+                                  color: Colors.red.withValues(alpha: 0.4),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Icon(
+                        _isRecording ? Icons.mic : Icons.mic_none_rounded,
+                        color: _isRecording
+                            ? Colors.white
+                            : (AIChatService.isInitialized
+                                ? AppTheme.accent
+                                : AppTheme.gray400),
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Text input
+                  Expanded(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 120),
+                      decoration: BoxDecoration(
+                        color: AppTheme.gray50,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppTheme.gray200,
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _message,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.newline,
+                        onSubmitted: (_) => _sendMessage(),
+                        decoration: InputDecoration(
+                          hintText: _isRecording 
+                              ? 'Recording...'
+                              : (AIChatService.isInitialized 
+                                  ? 'Ask me anything...' 
+                                  : 'Setup API key first...'),
+                          hintStyle: TextStyle(
+                            color: _isRecording 
+                                ? Colors.red[400]
+                                : AppTheme.gray400,
+                            fontSize: 15,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
+                        ),
+                        enabled: AIChatService.isInitialized && !_isRecording,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Send button
+                  Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: _isRecording 
-                          ? Colors.red.withValues(alpha: 0.1)
-                          : AppTheme.gray100,
+                      gradient: AIChatService.isInitialized
+                          ? const LinearGradient(
+                              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: AIChatService.isInitialized ? null : AppTheme.gray300,
                       shape: BoxShape.circle,
+                      boxShadow: AIChatService.isInitialized
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
-                    child: Icon(
-                      _isRecording ? Icons.mic : Icons.mic_none,
-                      color: _isRecording ? Colors.red : AppTheme.accent,
-                    ),
+                    child: _isTyping
+                        ? _buildTypingIndicator()
+                        : IconButton(
+                            icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
+                            onPressed: AIChatService.isInitialized ? _sendMessage : null,
+                            padding: EdgeInsets.zero,
+                          ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.gray100,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: TextField(
-                      controller: _message,
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: null,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: InputDecoration(
-                        hintText: _isRecording 
-                            ? 'Recording...'
-                            : (AIChatService.isInitialized 
-                                ? 'Ask me anything...' 
-                                : 'Setup API key first...'),
-                        hintStyle: TextStyle(
-                          color: _isRecording ? Colors.red : AppTheme.gray500,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                      ),
-                      enabled: AIChatService.isInitialized && !_isRecording,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Send button
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: AIChatService.isInitialized
-                        ? const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: AIChatService.isInitialized ? null : AppTheme.gray300,
-                    shape: BoxShape.circle,
-                  ),
-                  child: _isTyping
-                      ? _buildTypingIndicator()
-                      : IconButton(
-                          icon: const Icon(Icons.send_rounded, color: Colors.white),
-                          onPressed: AIChatService.isInitialized ? _sendMessage : null,
-                        ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
