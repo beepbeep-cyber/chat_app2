@@ -1,6 +1,7 @@
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:grouped_list/grouped_list.dart';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../resources/methods.dart';
 import '../../services/ai_chat_service.dart';
 import '../../services/remote_config_service.dart';
+import '../../utils/gemini_api_tester.dart';
 
 /// Modern AI ChatBot Screen with Google Gemini
 class ChatBot extends StatefulWidget {
@@ -307,6 +309,8 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
           onSelected: (value) {
             if (value == 'clear') {
               _showClearHistoryDialog();
+            } else if (value == 'test_key') {
+              _testApiKey();
             }
           },
           itemBuilder: (context) => [
@@ -320,6 +324,18 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                 ],
               ),
             ),
+            // Debug: Test API Key
+            if (kDebugMode)
+              const PopupMenuItem(
+                value: 'test_key',
+                child: Row(
+                  children: [
+                    Icon(Icons.science, size: 20),
+                    SizedBox(width: 12),
+                    Text('🔬 Test API Key'),
+                  ],
+                ),
+              ),
           ],
         ),
       ],
@@ -1227,6 +1243,27 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+  
+  void _testApiKey() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔬 Testing API key... Check console/logcat for results'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    await GeminiApiTester.testCurrentApiKey();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Test complete! Check debug console for detailed report'),
+          duration: Duration(seconds: 3),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+    }
   }
 
   void _showClearHistoryDialog() {
