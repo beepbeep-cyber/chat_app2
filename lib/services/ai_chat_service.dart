@@ -646,6 +646,139 @@ class AIChatService {
     }
   }
   
+  /// Convert audio to text using Gemini Audio API
+  static Future<AIChatResponse> audioToText(File audioFile) async {
+    final apiKey = _activeApiKey;
+    if (apiKey == null) {
+      return AIChatResponse(
+        success: false,
+        message: '⚠️ Không có API key.',
+        error: 'NO_API_KEY',
+      );
+    }
+    
+    try {
+      // Convert audio to base64
+      final audioBytes = await audioFile.readAsBytes();
+      final base64Audio = base64Encode(audioBytes);
+      
+      // Get audio MIME type
+      final extension = audioFile.path.split('.').last.toLowerCase();
+      String mimeType;
+      switch (extension) {
+        case 'm4a':
+          mimeType = 'audio/mp4';
+          break;
+        case 'mp3':
+          mimeType = 'audio/mp3';
+          break;
+        case 'wav':
+          mimeType = 'audio/wav';
+          break;
+        case 'webm':
+          mimeType = 'audio/webm';
+          break;
+        default:
+          mimeType = 'audio/mp4'; // Default fallback
+      }
+      
+      debugPrint('🎤 [Audio STT] Converting audio to text...');
+      debugPrint('   Audio size: ${audioBytes.length} bytes');
+      debugPrint('   MIME type: $mimeType');
+      
+      final url = '$_baseUrl/models/$_model:generateContent?key=$apiKey';
+      
+      final requestBody = {
+        'contents': [
+          {
+            'parts': [
+              {
+                'text': 'Transcribe this audio to text. Return ONLY the transcribed text without any additional comments or explanations.'
+              },
+              {
+                'inline_data': {
+                  'mime_type': mimeType,
+                  'data': base64Audio,
+                }
+              }
+            ]
+          }
+        ],
+        'generationConfig': {
+          'temperature': 0.1, // Low temperature for accurate transcription
+          'topK': 40,
+          'topP': 0.95,
+          'maxOutputTokens': 2048,
+        },
+      };
+      
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      ).timeout(const Duration(seconds: 60));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String transcribedText = '';
+        
+        if (data['candidates'] != null && data['candidates'].isNotEmpty) {
+          final candidate = data['candidates'][0];
+          if (candidate['content']?['parts']?.isNotEmpty == true) {
+            transcribedText = candidate['content']['parts'][0]['text'] ?? '';
+          }
+        }
+        
+        if (transcribedText.isEmpty) {
+          return AIChatResponse(
+            success: false,
+            message: '❓ Không nhận diện được giọng nói. Thử lại nhé!',
+            error: 'EMPTY_RESPONSE',
+          );
+        }
+        
+        debugPrint('✅ [Audio STT] Transcribed: $transcribedText');
+        return AIChatResponse(success: true, message: transcribedText);
+        
+      } else if (response.statusCode == 429) {
+        debugPrint('⏰ [Audio STT] Rate limited (429)');
+        
+        return AIChatResponse(
+          success: false,
+          message: '🔴 Server đang bận. Chờ 1 phút rồi thử lại.',
+          error: 'RATE_LIMIT',
+          cooldownSeconds: 60,
+        );
+        
+      } else {
+        debugPrint('❌ [Audio STT] Error ${response.statusCode}');
+        debugPrint('   Response body: ${response.body}');
+        
+        return AIChatResponse(
+          success: false,
+          message: '❌ Lỗi: Không thể nhận diện giọng nói.',
+          error: 'API_ERROR',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Audio STT error: $e');
+      
+      if (e.toString().contains('TimeoutException')) {
+        return AIChatResponse(
+          success: false,
+          message: '⏱️ Timeout. File âm thanh có thể quá lớn.',
+          error: 'TIMEOUT',
+        );
+      }
+      
+      return AIChatResponse(
+        success: false,
+        message: '📡 Lỗi mạng. Kiểm tra kết nối internet.',
+        error: 'NETWORK_ERROR',
+      );
+    }
+  }
+  
   /// Get client-side wait time
   static int _getClientWaitTime() {
     if (_requestTimestamps.isEmpty) return 0;

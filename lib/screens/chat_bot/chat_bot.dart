@@ -778,6 +778,29 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Show voice indicator if voice message
+                  if (map['type'] == 'voice') ...[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.mic,
+                          size: 16,
+                          color: isUser ? Colors.white70 : AppTheme.accent,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Voice message',
+                          style: TextStyle(
+                            color: isUser ? Colors.white70 : AppTheme.gray600,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   // Show image if available
                   if (map['type'] == 'image' && map['imageUrl'] != null) ...[
                     ClipRRect(
@@ -1224,14 +1247,119 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
   }
   
   Future<void> _sendVoiceMessage(String audioPath) async {
-    // TODO: Implement Speech-to-Text conversion
-    // For now, show a placeholder message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🎤 Voice message recorded! Speech-to-Text coming soon...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    setState(() {
+      _isTyping = true;
+    });
+    
+    try {
+      // Convert audio to text using Gemini Audio API
+      final response = await AIChatService.audioToText(File(audioPath));
+      
+      if (!response.success) {
+        setState(() {
+          _isTyping = false;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message),
+              backgroundColor: AppTheme.error,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Got transcribed text - now send it to the bot
+      final transcribedText = response.message;
+      
+      if (kDebugMode) {
+        debugPrint('✅ Transcribed: $transcribedText');
+      }
+      
+      // Show success feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎤 Đã nghe: "$transcribedText"'),
+            backgroundColor: AppTheme.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      // Save voice message to Firestore (as text type with voice metadata)
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('chatvsBot')
+          .add({
+        'sendBy': widget.user.displayName,
+        'message': transcribedText,
+        'type': 'voice', // Mark as voice message
+        'time': timeForMessage(DateTime.now().toString()),
+        'timeStamp': DateTime.now(),
+      });
+      
+      // Get AI response for the transcribed text
+      final aiResponse = await AIChatService.sendMessage(transcribedText);
+      
+      // Update cooldown if rate limited
+      if (aiResponse.isRateLimited && aiResponse.cooldownSeconds != null) {
+        setState(() {
+          _cooldownSeconds = aiResponse.cooldownSeconds!;
+          _isCooldown = true;
+        });
+      }
+      
+      // Save AI response
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('chatvsBot')
+          .add({
+        'sendBy': 'bot',
+        'message': aiResponse.message,
+        'type': 'text',
+        'time': timeForMessage(DateTime.now().toString()),
+        'timeStamp': DateTime.now(),
+      });
+      
+      setState(() {
+        _isTyping = false;
+      });
+      
+      // Scroll to bottom
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Voice message error: $e');
+      }
+      
+      setState(() {
+        _isTyping = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   void _sendMessage() async {
