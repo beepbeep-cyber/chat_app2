@@ -330,25 +330,25 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'clear',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline, size: 20),
-                  SizedBox(width: 12),
-                  Text('Clear Chat'),
+                  Icon(Icons.delete_outline, size: 20, color: Colors.red[400]),
+                  const SizedBox(width: 12),
+                  const Text('Clear Chat'),
                 ],
               ),
             ),
             // Debug: Test API Key
             if (kDebugMode)
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'test_key',
                 child: Row(
                   children: [
-                    Icon(Icons.science, size: 20),
-                    SizedBox(width: 12),
-                    Text('🔬 Test API Key'),
+                    Icon(Icons.science, size: 20, color: AppTheme.accent),
+                    const SizedBox(width: 12),
+                    const Text('🔬 Test API Key'),
                   ],
                 ),
               ),
@@ -1880,25 +1880,102 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Column(
           children: [
-            Icon(Icons.delete_outline, color: Colors.red[400]),
-            const SizedBox(width: 12),
-            const Text('Clear Chat History'),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.delete_outline, color: Colors.red[400], size: 32),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Clear Chat History?',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
-        content: const Text(
-          'This will delete all messages with the AI assistant. This action cannot be undone.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'This will permanently delete all messages with the AI assistant.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.gray600,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone',
+                      style: TextStyle(
+                        color: Colors.orange[900],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: AppTheme.gray600)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppTheme.gray600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
+              
+              // Show loading indicator
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Clearing chat history...'),
+                      ],
+                    ),
+                    duration: const Duration(seconds: 10),
+                  ),
+                );
+              }
               
               // Clear Firestore history
               final batch = _firestore.batch();
@@ -1920,21 +1997,37 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                 _showSuggestions = true;
               });
               
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Chat history cleared'),
-                  backgroundColor: AppTheme.success,
-                ),
-              );
+              // Hide loading and show success
+              if (mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white),
+                        const SizedBox(width: 12),
+                        const Text('✓ Chat history cleared'),
+                      ],
+                    ),
+                    backgroundColor: AppTheme.success,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red[400],
               foregroundColor: Colors.white,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Clear'),
+            child: const Text(
+              'Clear All',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
