@@ -809,7 +809,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 .collection('users')
                 .doc(widget.user.uid.isNotEmpty ? widget.user.uid : "0")
                 .collection('chatHistory')
-                .where('isPrivate', isEqualTo: false) // ✅ Exclude private chats
                 .orderBy('timeStamp', descending: true)
                 .limit(50)
                 .snapshots(),
@@ -818,7 +817,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 return ChatListShimmer(itemCount: 8);
               }
               
-              if (snapshot.data!.docs.isEmpty) {
+              // ✅ Filter private chats in code instead of query (no index needed)
+              final allDocs = snapshot.data!.docs;
+              final publicChats = allDocs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                // Show chat if isPrivate field doesn't exist OR is false
+                return data['isPrivate'] != true;
+              }).toList();
+              
+              if (publicChats.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -846,12 +853,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               }
               
               return ListView.builder(
-                itemCount: snapshot.data!.docs.length,
+                itemCount: publicChats.length,
                 padding: const EdgeInsets.only(top: 5, bottom: 20),
                 physics: const BouncingScrollPhysics(),
                 cacheExtent: 500,
                 itemBuilder: (context, index) {
-                  final map = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                  final map = publicChats[index].data() as Map<String, dynamic>;
                   return AnimatedListItem(
                     index: index,
                     delay: const Duration(milliseconds: 30),

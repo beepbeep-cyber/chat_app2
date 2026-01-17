@@ -311,15 +311,15 @@ class PrivateChatService {
         'addedAt': FieldValue.serverTimestamp(),
       });
       
-      // ✅ FIX: Update isPrivate field in chatHistory
+      // ✅ FIX: Use set with merge to handle existing/new docs
       await _firestore
           .collection('users')
           .doc(userId)
           .collection('chatHistory')
           .doc(chatRoomId)
-          .update({
+          .set({
         'isPrivate': true,
-      });
+      }, SetOptions(merge: true)); // ✅ Merge instead of update
       
       debugPrint('✅ PrivateChatService: Chat added to private: $chatRoomId');
       debugPrint('✅ PrivateChatService: Updated isPrivate=true in chatHistory');
@@ -344,15 +344,15 @@ class PrivateChatService {
           .doc(chatRoomId)
           .delete();
       
-      // ✅ FIX: Update isPrivate field in chatHistory
+      // ✅ FIX: Use set with merge
       await _firestore
           .collection('users')
           .doc(userId)
           .collection('chatHistory')
           .doc(chatRoomId)
-          .update({
+          .set({
         'isPrivate': false,
-      });
+      }, SetOptions(merge: true)); // ✅ Merge instead of update
       
       debugPrint('✅ PrivateChatService: Chat removed from private: $chatRoomId');
       debugPrint('✅ PrivateChatService: Updated isPrivate=false in chatHistory');
