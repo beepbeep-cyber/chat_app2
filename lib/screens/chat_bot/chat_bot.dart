@@ -1,10 +1,15 @@
+import 'dart:io';
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:grouped_list/grouped_list.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../resources/methods.dart';
@@ -30,6 +35,13 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
   bool _isTyping = false;
   bool _showSuggestions = true;
   late AnimationController _typingAnimationController;
+  
+  // Image & Voice features
+  File? _selectedImage;
+  final ImagePicker _imagePicker = ImagePicker();
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
+  String? _recordingPath;
   
   // API Key storage
   String? _apiKey;
@@ -845,67 +857,137 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Container(
+            // Image preview (if selected)
+            if (_selectedImage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppTheme.gray100,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _message,
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendMessage(),
-                        decoration: InputDecoration(
-                          hintText: AIChatService.isInitialized 
-                              ? 'Ask me anything...' 
-                              : 'Setup API key first...',
-                          hintStyle: TextStyle(color: AppTheme.gray500),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                        ),
-                        enabled: AIChatService.isInitialized,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        _selectedImage!,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Image selected',
+                        style: TextStyle(
+                          color: AppTheme.gray700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: AppTheme.gray600),
+                      onPressed: () {
+                        setState(() {
+                          _selectedImage = null;
+                        });
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 10),
-            // Send button
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: AIChatService.isInitialized
-                    ? const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: AIChatService.isInitialized ? null : AppTheme.gray300,
-                shape: BoxShape.circle,
-              ),
-              child: _isTyping
-                  ? _buildTypingIndicator()
-                  : IconButton(
-                      icon: const Icon(Icons.send_rounded, color: Colors.white),
-                      onPressed: AIChatService.isInitialized ? _sendMessage : null,
+            
+            Row(
+              children: [
+                // Camera button
+                IconButton(
+                  icon: Icon(Icons.camera_alt, color: AppTheme.accent),
+                  onPressed: AIChatService.isInitialized ? _pickImage : null,
+                ),
+                // Mic button (hold to record)
+                GestureDetector(
+                  onLongPressStart: (_) => _startRecording(),
+                  onLongPressEnd: (_) => _stopRecording(),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _isRecording 
+                          ? Colors.red.withValues(alpha: 0.1)
+                          : AppTheme.gray100,
+                      shape: BoxShape.circle,
                     ),
+                    child: Icon(
+                      _isRecording ? Icons.mic : Icons.mic_none,
+                      color: _isRecording ? Colors.red : AppTheme.accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.gray100,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _message,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: null,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _sendMessage(),
+                      decoration: InputDecoration(
+                        hintText: _isRecording 
+                            ? 'Recording...'
+                            : (AIChatService.isInitialized 
+                                ? 'Ask me anything...' 
+                                : 'Setup API key first...'),
+                        hintStyle: TextStyle(
+                          color: _isRecording ? Colors.red : AppTheme.gray500,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                      enabled: AIChatService.isInitialized && !_isRecording,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Send button
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: AIChatService.isInitialized
+                        ? const LinearGradient(
+                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: AIChatService.isInitialized ? null : AppTheme.gray300,
+                    shape: BoxShape.circle,
+                  ),
+                  child: _isTyping
+                      ? _buildTypingIndicator()
+                      : IconButton(
+                          icon: const Icon(Icons.send_rounded, color: Colors.white),
+                          onPressed: AIChatService.isInitialized ? _sendMessage : null,
+                        ),
+                ),
+              ],
             ),
           ],
         ),
@@ -922,6 +1004,105 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
           strokeWidth: 2,
           valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
         ),
+      ),
+    );
+  }
+  
+  // Image picker
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error picking image: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể chọn ảnh: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+  
+  // Voice recording
+  Future<void> _startRecording() async {
+    if (!AIChatService.isInitialized) return;
+    
+    try {
+      if (await _audioRecorder.hasPermission()) {
+        final dir = await getTemporaryDirectory();
+        final path = '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        
+        await _audioRecorder.start(
+          const RecordConfig(encoder: AudioEncoder.aacLc),
+          path: path,
+        );
+        
+        setState(() {
+          _isRecording = true;
+          _recordingPath = path;
+        });
+        
+        if (kDebugMode) {
+          debugPrint('🎤 Recording started: $path');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error starting recording: $e');
+      }
+    }
+  }
+  
+  Future<void> _stopRecording() async {
+    if (!_isRecording) return;
+    
+    try {
+      final path = await _audioRecorder.stop();
+      
+      setState(() {
+        _isRecording = false;
+      });
+      
+      if (path != null && File(path).existsSync()) {
+        if (kDebugMode) {
+          debugPrint('🎤 Recording stopped: $path');
+        }
+        
+        // Send voice message
+        await _sendVoiceMessage(path);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error stopping recording: $e');
+      }
+      setState(() {
+        _isRecording = false;
+      });
+    }
+  }
+  
+  Future<void> _sendVoiceMessage(String audioPath) async {
+    // TODO: Implement Speech-to-Text conversion
+    // For now, show a placeholder message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🎤 Voice message recorded! Speech-to-Text coming soon...'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
