@@ -809,6 +809,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 .collection('users')
                 .doc(widget.user.uid.isNotEmpty ? widget.user.uid : "0")
                 .collection('chatHistory')
+                .where('isPrivate', isEqualTo: false) // ✅ Exclude private chats
                 .orderBy('timeStamp', descending: true)
                 .limit(50)
                 .snapshots(),

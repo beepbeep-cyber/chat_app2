@@ -297,7 +297,7 @@ class PrivateChatService {
       final userId = _auth.currentUser?.uid;
       if (userId == null) return false;
       
-      // Store in Firestore
+      // Store in Firestore privateChats collection
       await _firestore
           .collection('users')
           .doc(userId)
@@ -311,7 +311,18 @@ class PrivateChatService {
         'addedAt': FieldValue.serverTimestamp(),
       });
       
+      // ✅ FIX: Update isPrivate field in chatHistory
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('chatHistory')
+          .doc(chatRoomId)
+          .update({
+        'isPrivate': true,
+      });
+      
       debugPrint('✅ PrivateChatService: Chat added to private: $chatRoomId');
+      debugPrint('✅ PrivateChatService: Updated isPrivate=true in chatHistory');
       return true;
     } catch (e) {
       debugPrint('❌ PrivateChatService: Error adding to private: $e');
@@ -325,6 +336,7 @@ class PrivateChatService {
       final userId = _auth.currentUser?.uid;
       if (userId == null) return false;
       
+      // Remove from privateChats collection
       await _firestore
           .collection('users')
           .doc(userId)
@@ -332,7 +344,18 @@ class PrivateChatService {
           .doc(chatRoomId)
           .delete();
       
+      // ✅ FIX: Update isPrivate field in chatHistory
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('chatHistory')
+          .doc(chatRoomId)
+          .update({
+        'isPrivate': false,
+      });
+      
       debugPrint('✅ PrivateChatService: Chat removed from private: $chatRoomId');
+      debugPrint('✅ PrivateChatService: Updated isPrivate=false in chatHistory');
       return true;
     } catch (e) {
       debugPrint('❌ PrivateChatService: Error removing from private: $e');
