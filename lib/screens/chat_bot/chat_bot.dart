@@ -76,10 +76,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
 
     try {
       // Step 1: Initialize Remote Config and get API key from server
+      // This will also load user's custom key from Firestore automatically
       await AIChatService.initializeFromRemoteConfig();
       
-      // Step 2: Load local custom key (if user has set one)
-      await _loadApiKey();
+      // Step 2: Sync SharedPreferences with Firestore (for backward compatibility)
+      await _syncApiKeyFromFirestore();
       
       // Update state after initialization
       setState(() {
@@ -87,7 +88,7 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
       });
     } catch (e) {
       debugPrint('❌ ChatBot: Failed to initialize AI: $e');
-      // Fallback to local key only
+      // Fallback: try to load from SharedPreferences
       await _loadApiKey();
       setState(() {
         _isLoadingRemoteConfig = false;
@@ -102,6 +103,43 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     )..repeat();
   }
 
+  /// Sync API key from Firestore to SharedPreferences
+  Future<void> _syncApiKeyFromFirestore() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      
+      if (doc.exists && doc.data() != null) {
+        final firestoreKey = doc.data()!['geminiApiKey'] as String?;
+        if (firestoreKey != null && firestoreKey.isNotEmpty) {
+          // Save to SharedPreferences for backward compatibility
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_apiKeyPrefKey, firestoreKey);
+          
+          // Set in AIChatService
+          AIChatService.setApiKey(firestoreKey);
+          
+          setState(() {
+            _apiKey = firestoreKey;
+          });
+          
+          debugPrint('✅ Synced API key from Firestore: ${_maskApiKey(firestoreKey)}');
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error syncing API key from Firestore: $e');
+    }
+    
+    // Fallback: Load from SharedPreferences
+    await _loadApiKey();
+  }
+  
   Future<void> _loadApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     final savedKey = prefs.getString(_apiKeyPrefKey);
@@ -110,16 +148,50 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
       setState(() {
         _apiKey = savedKey;
       });
+      debugPrint('✅ Loaded API key from SharedPreferences: ${_maskApiKey(savedKey)}');
     }
+  }
+  
+  String _maskApiKey(String apiKey) {
+    if (apiKey.length <= 8) return '****';
+    return '${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}';
   }
 
   Future<void> _saveApiKey(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_apiKeyPrefKey, key);
-    AIChatService.setApiKey(key);
-    setState(() {
-      _apiKey = key;
-    });
+    try {
+      // Save to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_apiKeyPrefKey, key);
+      
+      // Save to Firestore (for consistency with Profile screen)
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'geminiApiKey': key});
+        debugPrint('✅ Saved API key to Firestore');
+      }
+      
+      // Set in AIChatService
+      AIChatService.setApiKey(key);
+      
+      setState(() {
+        _apiKey = key;
+      });
+      
+      debugPrint('✅ API key saved: ${_maskApiKey(key)}');
+    } catch (e) {
+      debugPrint('❌ Error saving API key: $e');
+      
+      // Still try to set in AIChatService even if Firestore fails
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_apiKeyPrefKey, key);
+      AIChatService.setApiKey(key);
+      setState(() {
+        _apiKey = key;
+      });
+    }
   }
 
   @override

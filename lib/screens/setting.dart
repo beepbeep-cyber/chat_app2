@@ -16,6 +16,7 @@ import 'package:my_porject/services/fcm_service.dart';
 import 'package:my_porject/services/user_presence_service.dart';
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:my_porject/widgets/page_transitions.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
@@ -1388,6 +1389,18 @@ class _SettingState extends State<Setting> {
       return;
     }
     
+    // Validate API key format
+    if (!apiKey.startsWith('AIza')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ API key không hợp lệ!\n\nKey phải bắt đầu bằng "AIza"'),
+          backgroundColor: AppTheme.error,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    
     try {
       // Save to Firestore (user's document)
       await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
@@ -1397,20 +1410,34 @@ class _SettingState extends State<Setting> {
       // Update AIChatService immediately
       AIChatService.setApiKey(apiKey);
       
+      // Also save to SharedPreferences for backward compatibility
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('gemini_api_key', apiKey);
+      
+      if (kDebugMode) {
+        debugPrint('✅ API key saved to both Firestore and SharedPreferences');
+        debugPrint('   Key preview: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}');
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ API Key saved! AI Bot is ready.'),
+            content: Text('✓ API Key đã lưu! AI Bot sẵn sàng.'),
             backgroundColor: AppTheme.success,
+            duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error saving API key: $e');
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving API key: $e'),
+            content: Text('Lỗi khi lưu API key: $e'),
             backgroundColor: AppTheme.error,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
