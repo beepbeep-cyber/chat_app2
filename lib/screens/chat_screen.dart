@@ -409,7 +409,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'datatype': 'p2p',
         'timeStamp': Timestamp.fromDate(DateTime.now()),
         'isRead': true,
-      });
+      }, SetOptions(merge: true));
       String? currentUserAvatar;
       String? status;
       await _firestore
@@ -436,7 +436,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'datatype': 'p2p',
         'timeStamp': Timestamp.fromDate(DateTime.now()),  // ← FIX: Use server timestamp
         'isRead': false,
-      });
+      }, SetOptions(merge: true));
     } else {
       if (kDebugMode) { debugPrint("Enter some text"); }
     }
@@ -528,7 +528,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'datatype': 'p2p',
           'timeStamp': Timestamp.fromDate(DateTime.now()),
           'isRead': true,
-        });
+        }, SetOptions(merge: true));
         String? currentUserAvatar;
         String? status;
         await _firestore
@@ -555,7 +555,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'datatype': 'p2p',
           'timeStamp': Timestamp.fromDate(DateTime.now()),
           'isRead': false,
-        });
+        }, SetOptions(merge: true));
       }
     } catch (e) {
       debugPrint('❌ Error uploading image: $e');
@@ -717,7 +717,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'datatype': 'p2p',
         'timeStamp': Timestamp.fromDate(DateTime.now()),
         'isRead': true,
-      });
+      }, SetOptions(merge: true));
 
       // Get current user info for receiver's chat history
       String? currentUserAvatar;
@@ -750,7 +750,7 @@ class _ChatScreenState extends State<ChatScreen> {
         'datatype': 'p2p',
         'timeStamp': Timestamp.fromDate(DateTime.now()),
         'isRead': false,
-      });
+      }, SetOptions(merge: true));
     }
   }
 
@@ -2640,7 +2640,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'datatype': 'p2p',
       'timeStamp': Timestamp.fromDate(DateTime.now()),
       'isRead': true,
-    });
+    }, SetOptions(merge: true));
     String? currentUserAvatar;
     String? status;
     await _firestore
@@ -2667,7 +2667,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'datatype': 'p2p',
       'timeStamp': Timestamp.fromDate(DateTime.now()),
       'isRead': false,
-    });
+    }, SetOptions(merge: true));
   }
 
   String? userLat;
