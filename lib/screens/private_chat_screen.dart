@@ -36,11 +36,10 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
   Future<void> _checkAuthStatus() async {
     final hasPassword = await PrivateChatService.hasPassword();
-    final sessionValid = await PrivateChatService.isSessionValid();
     
     setState(() {
       _hasPassword = hasPassword;
-      _isAuthenticated = sessionValid;
+      _isAuthenticated = false;  // ✅ ALWAYS require authentication when opening Private Chats
       _isLoading = false;
     });
 
@@ -49,8 +48,9 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showSetupPasswordDialog();
       });
-    } else if (!sessionValid) {
-      // Show verify password dialog
+    } else {
+      // ✅ ALWAYS show verify password dialog (ignore session)
+      // This ensures Private Chats are ALWAYS protected
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showVerifyPasswordDialog();
       });
