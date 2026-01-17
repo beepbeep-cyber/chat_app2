@@ -32,6 +32,7 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _message = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<bool> _hasTextNotifier = ValueNotifier<bool>(false); // ✅ Optimize text state
   
   bool _isTyping = false;
   bool _showSuggestions = true;
@@ -210,10 +211,12 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
   }
 
   @override
+  @override
   void dispose() {
     _typingAnimationController.dispose();
     _scrollController.dispose();
     _message.dispose();
+    _hasTextNotifier.dispose(); // ✅ Dispose ValueNotifier
     super.dispose();
   }
 
@@ -619,13 +622,17 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
           .doc(_auth.currentUser!.uid)
           .collection('chatvsBot')
           .orderBy('timeStamp', descending: false)
+          .limit(50) // ✅ Limit to last 50 messages for better performance
           .snapshots(),
       builder: (context, snapshot) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients) {
-            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-          }
-        });
+        // ✅ Only scroll when data changes
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+            }
+          });
+        }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState();
@@ -655,8 +662,14 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
             ),
           ),
           indexedItemBuilder: (context, element, index) {
-            Map<String, dynamic> map = element.data() as Map<String, dynamic>;
-            return _buildMessageBubble(map);
+            final map = element.data() as Map<String, dynamic>;
+            // ✅ Use Key for better widget recycling
+            return _MessageBubble(
+              key: ValueKey(element.id),
+              map: map,
+              isUser: map['sendBy'] == widget.user.displayName,
+              userName: widget.user.displayName ?? 'U',
+            );
           },
           controller: _scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -927,9 +940,6 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
   }
 
   Widget _buildInputArea() {
-    // Check if user has text typed
-    final hasText = _message.text.trim().isNotEmpty;
-    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -963,6 +973,7 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                         width: 50,
                         height: 50,
                         fit: BoxFit.cover,
+                        cacheWidth: 100, // ✅ Cache image
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -993,7 +1004,7 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                 children: [
                   // Camera button
                   IconButton(
-                    icon: Icon(Icons.camera_alt_rounded, size: 24),
+                    icon: const Icon(Icons.camera_alt_rounded, size: 24),
                     color: AIChatService.isInitialized ? AppTheme.accent : AppTheme.gray400,
                     onPressed: AIChatService.isInitialized ? _pickImage : null,
                     padding: const EdgeInsets.all(8),
@@ -1018,7 +1029,10 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                         ),
                         maxLines: null,
                         textInputAction: TextInputAction.newline,
-                        onChanged: (text) => setState(() {}), // Update UI when text changes
+                        onChanged: (text) {
+                          // ✅ Only update notifier, not full setState
+                          _hasTextNotifier.value = text.trim().isNotEmpty;
+                        },
                         decoration: InputDecoration(
                           hintText: AIChatService.isInitialized 
                               ? 'Message...' 
@@ -1040,90 +1054,93 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
                   
                   const SizedBox(width: 8),
                   
-                  // Smart button: Voice (when empty) or Send (when has text)
-                  _isTyping
-                      ? Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  // ✅ Smart button with ValueListenableBuilder - only rebuilds this widget
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _hasTextNotifier,
+                    builder: (context, hasText, child) {
+                      return _isTyping
+                          ? Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                                ),
+                                shape: BoxShape.circle,
                               ),
-                            ),
-                          ),
-                        )
-                      : GestureDetector(
-                          // Long press for voice recording (when no text)
-                          onLongPress: (!hasText && AIChatService.isInitialized) 
-                              ? () {
-                                  if (kDebugMode) {
-                                    debugPrint('🎤 Long press detected - starting recording');
-                                  }
-                                  _startRecording();
-                                }
-                              : null,
-                          onLongPressEnd: (!hasText && AIChatService.isInitialized)
-                              ? (_) {
-                                  if (kDebugMode) {
-                                    debugPrint('🎤 Long press ended - stopping recording');
-                                  }
-                                  _stopRecording();
-                                }
-                              : null,
-                          // Tap for send (when has text)
-                          onTap: (hasText && AIChatService.isInitialized)
-                              ? _sendMessage
-                              : null,
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              gradient: (_isRecording || hasText)
-                                  ? LinearGradient(
-                                      colors: _isRecording
-                                          ? [Colors.red[400]!, Colors.red[600]!]
-                                          : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
-                                    )
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : GestureDetector(
+                              onLongPress: (!hasText && AIChatService.isInitialized) 
+                                  ? () {
+                                      if (kDebugMode) {
+                                        debugPrint('🎤 Long press detected - starting recording');
+                                      }
+                                      _startRecording();
+                                    }
                                   : null,
-                              color: (_isRecording || hasText)
-                                  ? null
-                                  : (AIChatService.isInitialized
-                                      ? AppTheme.gray300
-                                      : AppTheme.gray200),
-                              shape: BoxShape.circle,
-                              boxShadow: _isRecording
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.red.withValues(alpha: 0.4),
-                                        blurRadius: 8,
-                                        spreadRadius: 1,
-                                      ),
-                                    ]
+                              onLongPressEnd: (!hasText && AIChatService.isInitialized)
+                                  ? (_) {
+                                      if (kDebugMode) {
+                                        debugPrint('🎤 Long press ended - stopping recording');
+                                      }
+                                      _stopRecording();
+                                    }
                                   : null,
-                            ),
-                            child: Icon(
-                              _isRecording
-                                  ? Icons.mic
-                                  : (hasText ? Icons.send_rounded : Icons.mic_none_rounded),
-                              color: (_isRecording || hasText)
-                                  ? Colors.white
-                                  : (AIChatService.isInitialized
-                                      ? AppTheme.gray600
-                                      : AppTheme.gray400),
-                              size: 22,
-                            ),
-                          ),
-                        ),
+                              onTap: (hasText && AIChatService.isInitialized)
+                                  ? _sendMessage
+                                  : null,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  gradient: (_isRecording || hasText)
+                                      ? LinearGradient(
+                                          colors: _isRecording
+                                              ? [Colors.red[400]!, Colors.red[600]!]
+                                              : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+                                        )
+                                      : null,
+                                  color: (_isRecording || hasText)
+                                      ? null
+                                      : (AIChatService.isInitialized
+                                          ? AppTheme.gray300
+                                          : AppTheme.gray200),
+                                  shape: BoxShape.circle,
+                                  boxShadow: _isRecording
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withValues(alpha: 0.4),
+                                            blurRadius: 8,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Icon(
+                                  _isRecording
+                                      ? Icons.mic
+                                      : (hasText ? Icons.send_rounded : Icons.mic_none_rounded),
+                                  color: (_isRecording || hasText)
+                                      ? Colors.white
+                                      : (AIChatService.isInitialized
+                                          ? AppTheme.gray600
+                                          : AppTheme.gray400),
+                                  size: 22,
+                                ),
+                              ),
+                            );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1919,6 +1936,182 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
             ),
             child: const Text('Clear'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ✅ Optimized MessageBubble as StatelessWidget for better performance
+class _MessageBubble extends StatelessWidget {
+  final Map<String, dynamic> map;
+  final bool isUser;
+  final String userName;
+
+  const _MessageBubble({
+    Key? key,
+    required this.map,
+    required this.isUser,
+    required this.userName,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser) ...[
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: isUser
+                    ? const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isUser ? null : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(18),
+                  topRight: const Radius.circular(18),
+                  bottomLeft: Radius.circular(isUser ? 18 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 18),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Voice indicator
+                  if (map['type'] == 'voice') ...[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.mic,
+                          size: 16,
+                          color: isUser ? Colors.white70 : AppTheme.accent,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Voice message',
+                          style: TextStyle(
+                            color: isUser ? Colors.white70 : AppTheme.gray600,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  // Image with caching
+                  if (map['type'] == 'image' && map['imageUrl'] != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        map['imageUrl'],
+                        width: 200,
+                        fit: BoxFit.cover,
+                        cacheWidth: 400, // ✅ Cache image for performance
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 200,
+                            height: 200,
+                            alignment: Alignment.center,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isUser ? Colors.white : AppTheme.accent,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 200,
+                            height: 200,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppTheme.gray200,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.broken_image, size: 40, color: AppTheme.gray500),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Image not available',
+                                  style: TextStyle(color: AppTheme.gray600, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    if (map['message'] != null && 
+                        map['message'].toString().isNotEmpty && 
+                        map['message'] != '📸 [Image]')
+                      const SizedBox(height: 8),
+                  ],
+                  // Text message
+                  if (map['message'] != null && 
+                      map['message'].toString().isNotEmpty &&
+                      map['message'] != '📸 [Image]')
+                    SelectableText(
+                      map['message'] ?? '',
+                      style: TextStyle(
+                        color: isUser ? Colors.white : AppTheme.gray800,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (isUser) ...[
+            const SizedBox(width: 10),
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppTheme.gray200,
+              child: Text(
+                userName[0].toUpperCase(),
+                style: TextStyle(
+                  color: AppTheme.gray700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
