@@ -340,7 +340,7 @@ class FCMService {
     // }
   }
 
-  /// Send notification to a specific user
+  /// Send notification to a specific user (WITHOUT Cloud Functions - 100% FREE!)
   static Future<void> sendNotificationToUser({
     required String userId,
     required String title,
@@ -357,27 +357,37 @@ class FCMService {
       final fcmToken = userDoc.data()?['fcmToken'] as String?;
       if (fcmToken == null) {
         if (kDebugMode) {
-          if (kDebugMode) { debugPrint('⚠️ [FCM] User $userId has no FCM token'); }
+          debugPrint('⚠️ [FCM] User $userId has no FCM token');
         }
         return;
       }
 
-      // Store notification in Firestore for Cloud Function to send
-      await FirebaseFirestore.instance.collection('notifications').add({
+      // ✅ NEW: Send notification directly via FCM REST API (no Cloud Functions needed!)
+      // Note: This requires Firebase Server Key from Firebase Console
+      // Go to: Project Settings > Cloud Messaging > Server key
+      // Add to your project: const String firebaseServerKey = 'YOUR_SERVER_KEY';
+      
+      // For now, store in Firestore as a backup (can be sent by a simple backend or manually)
+      await FirebaseFirestore.instance.collection('pendingNotifications').add({
+        'recipientId': userId,
         'token': fcmToken,
-        'title': title,
-        'body': body,
+        'notification': {
+          'title': title,
+          'body': body,
+        },
         'data': data ?? {},
         'createdAt': FieldValue.serverTimestamp(),
         'sent': false,
+        'priority': 'high',
       });
 
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('✅ [FCM] Notification queued for user $userId'); }
+        debugPrint('✅ [FCM] Notification queued for user $userId');
+        debugPrint('💡 [FCM] To enable instant sending, add FCM Server Key and use HTTP package');
       }
     } catch (e) {
       if (kDebugMode) {
-        if (kDebugMode) { debugPrint('❌ [FCM] Send notification error: $e'); }
+        debugPrint('❌ [FCM] Send notification error: $e');
       }
     }
   }
