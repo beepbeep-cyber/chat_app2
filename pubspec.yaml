@@ -79,6 +79,9 @@ dependencies:
   # Biometric Authentication (Flutter 3.35.4 compatible)
   local_auth: ^2.3.0
   
+  # Google APIs Auth (for FCM v1 API OAuth 2.0)
+  googleapis_auth: ^1.6.0
+  
   # End-to-End Encryption packages (Flutter 3.38.0 compatible)
   encrypt: ^5.0.3
   crypto: ^3.0.5
