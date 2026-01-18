@@ -62,3 +62,5 @@ flutter_build.log
 # NOTE: dialog_flow_auth.json is REQUIRED for DialogFlow AI chatbot feature
 # The file must be included in assets/ for the app to work properly
 # DO NOT ignore this file - it's needed for the app to function
+# FCM Configuration (contains Service Account JSON)
+lib/config/fcm_config.dart

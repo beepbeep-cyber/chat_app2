@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:googleapis_auth/auth_io.dart' as auth;
+import 'package:my_porject/config/fcm_config.dart';
 
 /// FCM HTTP v1 API Service - Modern FCM implementation
 /// 
@@ -69,40 +70,13 @@ class FCMv1Service {
     }
   }
 
-  /// Load Service Account JSON from assets
+  /// Load Service Account JSON from config
   static Future<Map<String, dynamic>?> _loadServiceAccountJson() async {
     try {
-      // NOTE: For production, you should load this from a secure backend
-      // For development, you can hardcode the JSON here (NOT RECOMMENDED for production)
+      // Load from FCMConfig (lib/config/fcm_config.dart)
+      // This is configured with actual Service Account JSON
+      return FCMConfig.serviceAccountJson;
       
-      // OPTION 1: Load from assets (recommended for development)
-      // final String jsonString = await rootBundle.loadString('assets/service-account.json');
-      // return jsonDecode(jsonString) as Map<String, dynamic>;
-      
-      // OPTION 2: Hardcode JSON (for testing only - DELETE BEFORE PRODUCTION)
-      // return {
-      //   "type": "service_account",
-      //   "project_id": "your-project-id",
-      //   "private_key_id": "...",
-      //   "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
-      //   "client_email": "firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com",
-      //   "client_id": "...",
-      //   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-      //   "token_uri": "https://oauth2.googleapis.com/token",
-      //   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-      //   "client_x509_cert_url": "..."
-      // };
-      
-      // OPTION 3: Load from backend API (RECOMMENDED for production)
-      // final response = await http.get(Uri.parse('https://your-backend.com/api/fcm-credentials'));
-      // return jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (kDebugMode) {
-        debugPrint('⚠️ [FCM v1] Service Account JSON not configured!');
-        debugPrint('💡 [FCM v1] See instructions in fcm_v1_service.dart');
-      }
-      
-      return null;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [FCM v1] Load service account error: $e');

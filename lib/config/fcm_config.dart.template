@@ -1,0 +1,28 @@
+/// FCM v1 Service Account Configuration Template
+/// 
+/// HƯỚNG DẪN:
+/// 1. Copy file này thành: lib/config/fcm_config.dart
+/// 2. Thay thế các giá trị placeholder bằng Service Account JSON của bạn
+/// 3. Lấy Service Account JSON từ: Firebase Console > Project Settings > Service accounts > Generate new private key
+/// 
+/// ⚠️ SECURITY WARNING:
+/// - File lib/config/fcm_config.dart đã được thêm vào .gitignore
+/// - File này sẽ KHÔNG được push lên GitHub
+/// - KHÔNG share file fcm_config.dart với ai khác
+/// 
+class FCMConfig {
+  /// Service Account JSON for Firebase Cloud Messaging v1 API
+  static Map<String, dynamic> get serviceAccountJson => {
+    "type": "service_account",
+    "project_id": "YOUR_PROJECT_ID",  // ← Thay bằng project_id từ Service Account JSON
+    "private_key_id": "YOUR_PRIVATE_KEY_ID",  // ← Thay bằng private_key_id
+    "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n",  // ← Thay bằng private_key (giữ nguyên \n)
+    "client_email": "YOUR_CLIENT_EMAIL",  // ← Thay bằng client_email
+    "client_id": "YOUR_CLIENT_ID",  // ← Thay bằng client_id
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "YOUR_CLIENT_X509_CERT_URL",  // ← Thay bằng client_x509_cert_url
+    "universe_domain": "googleapis.com"
+  };
+}
