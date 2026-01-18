@@ -82,6 +82,9 @@ dependencies:
   # Google APIs Auth (for FCM v1 API OAuth 2.0)
   googleapis_auth: ^1.6.0
   
+  # OneSignal Push Notifications (100% FREE)
+  onesignal_flutter: ^5.2.10
+  
   # End-to-End Encryption packages (Flutter 3.38.0 compatible)
   encrypt: ^5.0.3
   crypto: ^3.0.5

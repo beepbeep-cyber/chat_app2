@@ -18,6 +18,7 @@ import 'package:my_porject/screens/private_chat_screen.dart';
 import 'package:my_porject/widgets/conversationList.dart';
 import 'package:my_porject/services/cache_service.dart';
 import 'package:my_porject/services/presence_service.dart';
+import 'package:my_porject/services/onesignal_service.dart';  // ✅ OneSignal
 import 'package:my_porject/services/incoming_call_service.dart';
 import 'package:my_porject/screens/video_call_screen.dart';
 import 'package:provider/provider.dart';
@@ -71,6 +72,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     LogRepository.init(dbName: _auth.currentUser!.uid);
     _getConnectivity();
+    
+    // ✅ Save OneSignal Player ID to Firestore
+    await OneSignalService.savePlayerIdToFirestore(_auth.currentUser!.uid);
     
     // 🔔 CRITICAL: Start listening for incoming calls AFTER initialization
     // Must wait for Firebase Auth to be ready!
