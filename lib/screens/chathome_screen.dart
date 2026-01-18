@@ -18,7 +18,6 @@ import 'package:my_porject/screens/private_chat_screen.dart';
 import 'package:my_porject/widgets/conversationList.dart';
 import 'package:my_porject/services/cache_service.dart';
 import 'package:my_porject/services/presence_service.dart';
-import 'package:my_porject/services/onesignal_service.dart';  // ✅ OneSignal
 import 'package:my_porject/services/incoming_call_service.dart';
 import 'package:my_porject/screens/video_call_screen.dart';
 import 'package:provider/provider.dart';
@@ -72,9 +71,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     LogRepository.init(dbName: _auth.currentUser!.uid);
     _getConnectivity();
-    
-    // ✅ Save OneSignal Player ID to Firestore
-    await OneSignalService.savePlayerIdToFirestore(_auth.currentUser!.uid);
     
     // 🔔 CRITICAL: Start listening for incoming calls AFTER initialization
     // Must wait for Firebase Auth to be ready!
@@ -137,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha:0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -150,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha:0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -182,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   border: Border.all(color: Colors.white, width: 4),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha:0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -247,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.4),
+                            color: Colors.red.withValues(alpha:0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -307,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.green.withOpacity(0.4),
+                            color: Colors.green.withValues(alpha:0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),

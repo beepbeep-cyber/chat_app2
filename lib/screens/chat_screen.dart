@@ -27,7 +27,6 @@ import 'package:my_porject/widgets/video_call_message_widget.dart';
 import 'package:my_porject/screens/chat_settings_screen.dart';
 import 'package:my_porject/screens/video_call_screen.dart';
 import 'package:my_porject/services/auto_delete_service.dart';
-import 'package:my_porject/utils/loading_utils.dart';
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:my_porject/widgets/animated_avatar.dart';
 import 'package:my_porject/widgets/page_transitions.dart';
@@ -80,18 +79,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // Optimized: Limit messages for better performance
   static const int _messageLimit = 50; // Load max 50 messages initially
 
-  // Helper function to format call duration in seconds to readable format
-  String _formatCallDuration(dynamic seconds) {
-    if (seconds == null) return '';
-    final int secs = seconds is int ? seconds : int.tryParse(seconds.toString()) ?? 0;
-    if (secs < 60) return '${secs}s';
-    final int mins = secs ~/ 60;
-    final int remainingSecs = secs % 60;
-    if (mins < 60) return '${mins}m ${remainingSecs}s';
-    final int hours = mins ~/ 60;
-    final int remainingMins = mins % 60;
-    return '${hours}h ${remainingMins}m';
-  }
+
 
   // Helper function to format Timestamp to readable time string
   String _formatTimestamp(dynamic timestamp) {
@@ -1066,8 +1054,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             
                             return GroupedListView<
                                 QueryDocumentSnapshot<Object?>, String>(
-                              elements: validDocs
-                                  as List<QueryDocumentSnapshot<Object?>>,
+                              elements: validDocs,
                               shrinkWrap: true,
                               groupBy: (element) {
                                 // Handle mixed time types (String, Timestamp, DateTime)
@@ -2205,48 +2192,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildAttachmentOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[900],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Pick document (placeholder - requires file_picker package)
   Future<void> _pickDocument() async {
     try {
@@ -3151,7 +3096,6 @@ class _VoiceRecordingBottomSheet extends StatefulWidget {
 }
 
 class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> with SingleTickerProviderStateMixin {
-  bool _isRecording = false;
   bool _isUploading = false;
   String _recordingTime = '00:00';
   Timer? _timer;
@@ -3173,10 +3117,6 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
     final success = await VoiceMessageService.startRecording();
     
     if (success) {
-      setState(() {
-        _isRecording = true;
-      });
-      
       // Start timer
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (mounted) {
@@ -3220,7 +3160,6 @@ class _VoiceRecordingBottomSheetState extends State<_VoiceRecordingBottomSheet> 
     _timer?.cancel();
     
     setState(() {
-      _isRecording = false;
       _isUploading = true;
     });
 

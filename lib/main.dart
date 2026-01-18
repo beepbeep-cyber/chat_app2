@@ -11,7 +11,6 @@ import 'package:my_porject/provider/user_provider.dart';
 import 'package:my_porject/configs/app_theme.dart';
 import 'package:my_porject/services/biometric_auth_service.dart';
 import 'package:my_porject/services/fcm_service.dart';
-import 'package:my_porject/services/onesignal_service.dart';  // ✅ OneSignal
 import 'package:my_porject/screens/biometric_lock_screen.dart';
 
 // Background message handler - must be top-level function
@@ -36,13 +35,9 @@ void main() async {
   // Register background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
-  // ✅ Initialize OneSignal (100% FREE push notifications)
-  await OneSignalService.initialize();
-  
   if (kDebugMode) {
     debugPrint('✅ [Main] Firebase initialized');
     debugPrint('✅ [Main] FCM background handler registered');
-    debugPrint('✅ [Main] OneSignal initialized');
   }
   
   // Set Firebase Auth persistence to LOCAL (persist across app restarts)
