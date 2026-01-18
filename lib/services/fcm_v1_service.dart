@@ -23,7 +23,7 @@ import 'package:googleapis_auth/auth_io.dart' as auth;
 /// 7. Copy vào thư mục assets/ trong project Flutter
 ///
 class FCMv1Service {
-  static const String _projectId = 'chat-app2-dc9ce'; // ⚠️ THAY ĐỔI NÀY THEO PROJECT ID CỦA BẠN
+  static const String _projectId = 'chatapptest2-93793'; // ✅ Updated from google-services.json
   
   // FCM v1 API endpoint
   static String get _fcmEndpoint => 
