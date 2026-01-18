@@ -60,14 +60,6 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     _initializeAI();
     _initTypingAnimation();
     _startCooldownTimer();
-    
-    // ✅ Auto-scroll to latest message when screen loads
-    // ⚠️ Add delay to ensure StreamBuilder finishes building
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _scrollToBottom();
-      });
-    });
   }
 
   /// Start periodic timer to update cooldown UI
@@ -127,7 +119,7 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     )..repeat();
   }
 
-  /// ✅ Auto-scroll to bottom of chat
+  /// ✅ Auto-scroll to bottom of chat (with reverse: true, scroll to 0.0)
   void _scrollToBottom() {
     if (!_scrollController.hasClients) {
       if (kDebugMode) {
@@ -141,11 +133,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     }
     
     if (kDebugMode) {
-      debugPrint('✅ [ChatBot] Scrolling to bottom: ${_scrollController.position.maxScrollExtent}');
+      debugPrint('✅ [ChatBot] Scrolling to bottom (reverse mode): 0.0');
     }
     
     _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
+      0.0, // ✅ With reverse: true, position 0.0 = bottom (latest message)
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
@@ -653,25 +645,16 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
           .collection('users')
           .doc(_auth.currentUser!.uid)
           .collection('chatvsBot')
-          .orderBy('timeStamp', descending: false)
+          .orderBy('timeStamp', descending: true) // ✅ Changed: newest first
           .limit(50) // ✅ Limit to last 50 messages for better performance
           .snapshots(),
       builder: (context, snapshot) {
-        // ✅ Only scroll when data changes
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients) {
-              _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-            }
-          });
-        }
-
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState();
         }
 
         return GroupedListView<QueryDocumentSnapshot<Object?>, String>(
-          shrinkWrap: true,
+          reverse: true, // ✅ Reverse display so newest messages appear at bottom
           elements: snapshot.data!.docs,
           groupBy: (element) => element['time'] ?? '',
           groupSeparatorBuilder: (String groupByValue) => Container(
@@ -1464,11 +1447,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
         _isTyping = false;
       });
       
-      // Scroll to bottom
+      // Scroll to bottom (reverse mode = 0.0)
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
+            0.0, // ✅ reverse: true, so 0.0 = bottom
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOut,
           );
@@ -1611,11 +1594,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
       _isTyping = false;
     });
 
-    // Scroll to bottom
+    // Scroll to bottom (reverse mode = 0.0)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          0.0, // ✅ reverse: true, so 0.0 = bottom
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
