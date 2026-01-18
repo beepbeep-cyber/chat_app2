@@ -927,6 +927,43 @@ class AIChatService {
         
       } else if (response.statusCode == 429) {
         debugPrint('⏰ [AI Response] Rate limited (429)');
+        
+        // Parse error details from response
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMsg = errorData['error']?['message'] ?? '';
+          final errorDetails = errorData['error']?['details'] ?? [];
+          
+          debugPrint('   Error message: $errorMsg');
+          debugPrint('   Error details: $errorDetails');
+          
+          // Show detailed error to user
+          String detailedMsg = '🔴 API Key bị giới hạn!\n\n';
+          
+          if (errorMsg.contains('quota')) {
+            detailedMsg += '💡 Nguyên nhân: Vượt quota miễn phí\n\n';
+            detailedMsg += '🔧 Giải pháp:\n';
+            detailedMsg += '1. Đợi 1 phút rồi thử lại\n';
+            detailedMsg += '2. Enable Billing tại Google Cloud Console\n';
+            detailedMsg += '3. Tạo API key mới từ project khác\n\n';
+            detailedMsg += '📋 Chi tiết: $errorMsg';
+          } else {
+            detailedMsg += '⏳ Vui lòng chờ 1 phút rồi thử lại.\n\n';
+            detailedMsg += '💡 Hoặc tạo API key mới tại:\n';
+            detailedMsg += 'https://aistudio.google.com/app/apikey';
+          }
+          
+          _removeLastUserMessage();
+          return AIChatResponse(
+            success: false,
+            message: detailedMsg,
+            error: 'RATE_LIMIT',
+            cooldownSeconds: 60,
+          );
+        } catch (e) {
+          debugPrint('   Could not parse error details: $e');
+        }
+        
         _removeLastUserMessage();
         return AIChatResponse(
           success: false,
