@@ -645,8 +645,8 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
           .collection('users')
           .doc(_auth.currentUser!.uid)
           .collection('chatvsBot')
-          .orderBy('timeStamp', descending: true) // ✅ Changed: newest first
-          .limit(50) // ✅ Limit to last 50 messages for better performance
+          .orderBy('timeStamp', descending: false) // ✅ Tin cũ → tin mới
+          .limit(50)
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -654,7 +654,7 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
         }
 
         return GroupedListView<QueryDocumentSnapshot<Object?>, String>(
-          reverse: true, // ✅ Reverse display so newest messages appear at bottom
+          reverse: true, // ✅ Đảo ngược: tin mới xuống dưới
           elements: snapshot.data!.docs,
           groupBy: (element) => element['time'] ?? '',
           groupSeparatorBuilder: (String groupByValue) => Container(
