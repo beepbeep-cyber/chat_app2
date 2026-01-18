@@ -62,8 +62,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     _startCooldownTimer();
     
     // ✅ Auto-scroll to latest message when screen loads
+    // ⚠️ Add delay to ensure StreamBuilder finishes building
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _scrollToBottom();
+      });
     });
   }
 
@@ -126,13 +129,26 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
 
   /// ✅ Auto-scroll to bottom of chat
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+    if (!_scrollController.hasClients) {
+      if (kDebugMode) {
+        debugPrint('⚠️ [ChatBot] ScrollController has no clients yet');
+      }
+      // Retry after a delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _scrollToBottom();
+      });
+      return;
     }
+    
+    if (kDebugMode) {
+      debugPrint('✅ [ChatBot] Scrolling to bottom: ${_scrollController.position.maxScrollExtent}');
+    }
+    
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   /// Sync API key from Firestore to SharedPreferences
