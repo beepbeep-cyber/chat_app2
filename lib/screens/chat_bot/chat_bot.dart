@@ -119,25 +119,21 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     )..repeat();
   }
 
-  /// ✅ Auto-scroll to bottom of chat (with reverse: true, scroll to 0.0)
+  /// ✅ Auto-scroll to bottom of chat
   void _scrollToBottom() {
     if (!_scrollController.hasClients) {
       if (kDebugMode) {
         debugPrint('⚠️ [ChatBot] ScrollController has no clients yet');
       }
-      // Retry after a delay
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _scrollToBottom();
-      });
       return;
     }
     
     if (kDebugMode) {
-      debugPrint('✅ [ChatBot] Scrolling to bottom (reverse mode): 0.0');
+      debugPrint('✅ [ChatBot] Scrolling to bottom: ${_scrollController.position.maxScrollExtent}');
     }
     
     _scrollController.animateTo(
-      0.0, // ✅ With reverse: true, position 0.0 = bottom (latest message)
+      _scrollController.position.maxScrollExtent,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
@@ -649,12 +645,20 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
           .limit(50)
           .snapshots(),
       builder: (context, snapshot) {
+        // ✅ Auto-scroll to bottom when new messages arrive
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+            }
+          });
+        }
+
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState();
         }
 
         return GroupedListView<QueryDocumentSnapshot<Object?>, String>(
-          reverse: true, // ✅ Đảo ngược: tin mới xuống dưới
           elements: snapshot.data!.docs,
           groupBy: (element) => element['time'] ?? '',
           groupSeparatorBuilder: (String groupByValue) => Container(
@@ -1447,11 +1451,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
         _isTyping = false;
       });
       
-      // Scroll to bottom (reverse mode = 0.0)
+      // Scroll to bottom
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
-            0.0, // ✅ reverse: true, so 0.0 = bottom
+            _scrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOut,
           );
