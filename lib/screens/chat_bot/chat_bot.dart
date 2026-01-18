@@ -60,6 +60,11 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
     _initializeAI();
     _initTypingAnimation();
     _startCooldownTimer();
+    
+    // ✅ Auto-scroll to latest message when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   /// Start periodic timer to update cooldown UI
@@ -117,6 +122,17 @@ class _ChatBotState extends State<ChatBot> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
+  }
+
+  /// ✅ Auto-scroll to bottom of chat
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   /// Sync API key from Firestore to SharedPreferences
