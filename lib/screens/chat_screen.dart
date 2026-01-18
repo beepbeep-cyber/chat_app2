@@ -18,7 +18,8 @@ import 'package:uuid/uuid.dart';
 import 'package:my_porject/models/user_model.dart';
 import 'package:my_porject/services/encrypted_chat_service.dart';
 import 'package:my_porject/services/voice_message_service.dart';
-import 'package:my_porject/services/fcm_v1_service.dart';  // ✅ FCM v1 API (New)
+// ❌ FCM v1 API removed - Not needed for production APK
+// Firebase Messaging handles notifications automatically via FCM service
 import 'package:my_porject/services/file_sharing_service.dart';
 import 'package:my_porject/widgets/voice_message_player.dart';
 import 'package:my_porject/widgets/file_message_widget.dart';
@@ -439,13 +440,8 @@ class _ChatScreenState extends State<ChatScreen> {
         'isRead': false,
       }, SetOptions(merge: true));
       
-      // ✅ NEW: Send push notification to recipient
-      FCMv1Service.sendChatNotification(
-        recipientUserId: widget.userMap['uid'],
-        senderName: widget.user.displayName ?? 'Someone',
-        messageText: message,
-        chatRoomId: widget.chatRoomId,
-      );
+      // ✅ Firebase Messaging handles push notifications automatically
+      // No need for manual FCM HTTP calls - notifications work via FCM service
     } else {
       if (kDebugMode) { debugPrint("Enter some text"); }
     }
