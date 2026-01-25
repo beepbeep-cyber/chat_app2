@@ -8,6 +8,7 @@ import 'package:my_porject/screens/chat_screen.dart';
 import 'package:my_porject/widgets/page_transitions.dart';
 import 'package:my_porject/widgets/animated_avatar.dart';
 import 'package:my_porject/resources/methods.dart';  // ✅ Import ChatRoomId
+import 'package:my_porject/screens/group/group_chat_room.dart';  // ✅ Import GroupChatRoom
 
 /// Private Chat Screen - Hiển thị các đoạn chat được bảo mật bằng mật khẩu
 class PrivateChatScreen extends StatefulWidget {
@@ -597,6 +598,9 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Widget _buildPrivateChatTile(Map<String, dynamic> chat, String chatRoomId) {
+    // ✅ FIX: For group chats, fetch actual group avatar from Firestore
+    final isGroup = chat['chatType'] == 'group';
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -620,15 +624,35 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Avatar with lock badge
+                // Avatar with lock badge - ✅ FIX: Load real group avatar
                 Stack(
                   children: [
-                    AnimatedAvatar(
-                      imageUrl: chat['chatAvatar'] ?? '',
-                      name: chat['chatName'] ?? 'Private',
-                      size: 56,
-                      showStatus: false,
-                    ),
+                    isGroup
+                        ? FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('groups')
+                                .doc(chatRoomId)
+                                .get(),
+                            builder: (context, snapshot) {
+                              String? groupAvatar;
+                              if (snapshot.hasData && snapshot.data!.exists) {
+                                final data = snapshot.data!.data() as Map<String, dynamic>?;
+                                groupAvatar = data?['avatar'] as String?;
+                              }
+                              return AnimatedAvatar(
+                                imageUrl: groupAvatar ?? '',
+                                name: chat['chatName'] ?? 'Private',
+                                size: 56,
+                                showStatus: false,
+                              );
+                            },
+                          )
+                        : AnimatedAvatar(
+                            imageUrl: chat['chatAvatar'] ?? '',
+                            name: chat['chatName'] ?? 'Private',
+                            size: 56,
+                            showStatus: false,
+                          ),
                     Positioned(
                       right: 0,
                       bottom: 0,
@@ -738,6 +762,21 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               ),
             );
           }
+        }
+      } else if (chat['chatType'] == 'group') {
+        // ✅ FIX: Handle group chat navigation
+        if (mounted) {
+          Navigator.push(
+            context,
+            SlideRightRoute(
+              page: GroupChatRoom(
+                groupChatId: docId,  // Use docId as groupChatId
+                groupName: chat['chatName'] ?? 'Group Chat',
+                user: widget.user,
+                isDeviceConnected: widget.isDeviceConnected,
+              ),
+            ),
+          );
         }
       }
     } catch (e) {
