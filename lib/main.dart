@@ -176,10 +176,14 @@ class _AppLauncherState extends State<AppLauncher> {
     }
   }
 
-  void _onBiometricSuccess() {
+  void _onBiometricSuccess() async {
     if (kDebugMode) {
       debugPrint('✅ [AppLauncher] Biometric passed, checking auth state...');
     }
+    
+    // ✅ FIX: Add smooth transition delay to prevent UI flash
+    await Future.delayed(const Duration(milliseconds: 300));
+    
     if (mounted) {
       setState(() {
         _needsBiometric = false;
